@@ -22,6 +22,28 @@ customAttributeLoader::loadVariableAttributes()
   isoSys.load_variables(this, var_index);
 }
 
+// =================================================================================
+// Set the attributes of the postprocessed field variables
+// =================================================================================
+
+void
+customAttributeLoader::loadPostProcessorVariableAttributes()
+{
+#include "ParaboloidSystem.h"
+
+#include <fstream>
+#include <iostream>
+  nlohmann::json   model_parameters;
+  ParaboloidSystem isoSys;
+  std::ifstream    system_file;
+  system_file.open("system.json");
+  system_file >> model_parameters;
+  system_file.close();
+  isoSys.from_json(model_parameters);
+  uint pp_index = 0;
+  isoSys.load_pp_variables(this, pp_index);
+}
+
 // =============================================================================================
 // explicitEquationRHS (needed only if one or more equation is explict time
 // dependent)
@@ -42,6 +64,29 @@ customPDE<dim, degree>::explicitEquationRHS(
   sys.calculate_dmudt();
   var_index = 0;
   sys.submit_fields(variable_list, var_index);
+}
+
+// =============================================================================================
+// postProcessedFields: Set the postprocessing expressions
+// =============================================================================================
+
+template <int dim, int degree>
+void
+customPDE<dim, degree>::postProcessedFields(
+  [[maybe_unused]] const variableContainer<dim, degree, VectorizedArray<double>>
+    &variable_list,
+  [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>>
+                                                            &pp_variable_list,
+  [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
+  [[maybe_unused]] const VectorizedArray<double>             element_volume) const
+{
+  SystemContainer<dim, degree> ppsys(isoSys, userInputs);
+  uint                         var_index = 0;
+  ppsys.initialize_fields_postprocess(variable_list, var_index);
+  ppsys.calculate_sum_sq_eta();
+  ppsys.calculate_h();
+  uint pp_index = 0;
+  ppsys.submit_pp_fields(pp_variable_list, pp_index);
 }
 
 // =============================================================================================

@@ -9,15 +9,6 @@
 #include <core/inputFileReader.h>
 #include <core/variableAttributeLoader.h>
 
-// Header file for postprocessing that may or may not exist
-#ifdef POSTPROCESS_FILE_EXISTS
-#  include "postprocess.cc"
-#else
-void
-customAttributeLoader::loadPostProcessorVariableAttributes()
-{}
-#endif
-
 // Header files for nucleation that may or may not exist
 #ifdef NUCLEATION_FILE_EXISTS
 #  include "nucleation.cc"

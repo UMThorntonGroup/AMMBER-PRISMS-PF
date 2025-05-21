@@ -78,8 +78,7 @@ private:
     [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
     [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
 
-// Function to set postprocessing expressions (in postprocess.h)
-#ifdef POSTPROCESS_FILE_EXISTS
+  // Function to set postprocessing expressions
   void
   postProcessedFields(
     [[maybe_unused]] const variableContainer<dim, degree, VectorizedArray<double>>
@@ -88,7 +87,6 @@ private:
                                                               &pp_variable_list,
     [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
     [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
-#endif
 
 // Function to set the nucleation probability (in nucleation.h)
 #ifdef NUCLEATION_FILE_EXISTS
