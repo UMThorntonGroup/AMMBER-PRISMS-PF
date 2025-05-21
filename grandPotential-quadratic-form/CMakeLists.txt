@@ -11,8 +11,9 @@ project(myapp CXX)
 
 # Set location of files
 include_directories(${CMAKE_SOURCE_DIR}/../phaseField/include)
-include_directories(${CMAKE_SOURCE_DIR}/../phaseField/src)
 include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/../include)
+include_directories(${CMAKE_SOURCE_DIR}/../vendor)
 
 # Set the location of the main.cc file
 set(TARGET_SRC "${CMAKE_SOURCE_DIR}/main.cc")

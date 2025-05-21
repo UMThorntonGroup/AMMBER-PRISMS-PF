@@ -5,7 +5,7 @@
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
-#include "FieldContainer.h"
+#include <FieldContainer.h>
 
 template <typename number>
 using boost_vector = boost::numeric::ublas::vector<number>;

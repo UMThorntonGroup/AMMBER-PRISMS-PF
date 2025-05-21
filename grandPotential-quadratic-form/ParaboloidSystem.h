@@ -8,11 +8,10 @@
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
-#include "json.hpp"
-
 #include <core/variableAttributeLoader.h>
 #include <iomanip>
 #include <iostream>
+#include <json.hpp>
 #include <map>
 #include <string>
 

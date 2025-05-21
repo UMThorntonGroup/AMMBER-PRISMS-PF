@@ -1,11 +1,10 @@
 #ifndef PARABOLOIDSYSTEM_H
 #define PARABOLOIDSYSTEM_H
 
-#include "json.hpp"
-
 #include <core/variableAttributeLoader.h>
 #include <iomanip>
 #include <iostream>
+#include <json.hpp>
 #include <map>
 #include <string>
 
