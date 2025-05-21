@@ -8,9 +8,9 @@
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
-#include "FieldContainer.h"
 #include "ParaboloidSystem.h"
 
+#include <FieldContainer.h>
 #include <core/userInputParameters.h>
 #include <core/variableContainer.h>
 #include <map>
@@ -20,7 +20,7 @@
 // using boost_vector = boost::numeric::ublas::vector<number>;
 // template <typename number>
 // using boost_symmet = boost::numeric::ublas::symmetric_matrix<number>;
-#include "LinAlg.h"
+#include <LinAlg.h>
 
 namespace boost::numeric::ublas
 {
