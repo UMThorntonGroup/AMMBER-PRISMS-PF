@@ -1,0 +1,124 @@
+# Build files & folders
+build/*
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+!cmake/*.cmake
+Makefile
+.ninja*
+build.ninja
+
+# Config files
+include/config.h
+*.project
+*.cproject
+*.DS_Store
+
+# IDE files
+*.vscode/*
+.clangd
+compile_commands.json
+
+# Python virtual environments
+.venv/*
+*.venv/
+
+# Clang-tidy
+output.txt
+error.txt
+
+# Compressed Libraries
+*.zip
+*.tar.gz
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+*.pbs
+main-debug
+main
+
+#Output files
+applications/*/*.vtk
+*.vtu
+*.vts
+*.frt
+integratedFields.txt
+output.txt
+error.txt
+CTestCostData.txt
+
+# Checkpoint/restart files
+restart.*
+restart.mesh
+restart.mesh.old
+restart.mesh.info
+restart.mesh.info.old
+restart.time.info
+restart.time.info.old
+
+#Temporary files
+*~
+*#
+*.#
+*.btr
+.*vtu*
+
+# Misc
+visitlog.py
+DoxygenWarningLog.txt
+
+#Tex files
+*.aux
+*.glo
+*.idx
+*.log
+*.toc
+*.ist
+*.acn
+*.acr
+*.alg
+*.bbl
+*.blg
+*.dvi
+*.glg
+*.gls
+*.ilg
+*.ind
+*.lof
+*.lot
+*.maf
+*.mtc
+*.mtc1
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.nav
+*.snm
+*.nlo
+
+# Doxygen
+doc/doxygen/html/*
+doc/doxygen/latex/*
+doc/doxygen/Doxyfile.doc_doxygen
+doc/doxygen/CMakeDoxyfile.in
+doc/doxygen/DoxygenWarningLog.txt
