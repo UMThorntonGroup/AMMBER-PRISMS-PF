@@ -1,0 +1,72 @@
+{
+    "dimensions": {
+        "length_scale": 1.0,
+        "time_scale": 1.0,
+        "energy_density_scale": 1.0
+    },
+    "convert_fractional_to_volumetric_energy": false,
+    "solution_component": "TA",
+    "components": [
+        "CU",
+        "TI"
+    ],
+    "Vm": 1.0,
+    "l_int": 2.0,
+    "phases": {
+        "SOLID": {
+            "mu_int": 10.0,
+            "D": 1.0,
+            "sigma": 1.0,
+            "D_well": 0.0,
+            "CU": {
+                "A_well": {
+                    "CU": 1.0,
+                    "TI": 0.0
+                },
+                "B_well": 0.0,
+                "c_ref": 0.8,
+                "c0": 0.8
+            },
+            "TI": {
+                "A_well": {
+                    "CU": 0.0,
+                    "TI": 1.0
+                },
+                "B_well": 0.0,
+                "c_ref": 0.1,
+                "c0": 0.1
+            }
+        },
+        "LIQUID": {
+            "mu_int": 10.0,
+            "D": 1.0,
+            "sigma": 1.0,
+            "D_well": 0.0,
+            "CU": {
+                "A_well": {
+                    "CU": 0.5,
+                    "TI": 0.0
+                },
+                "B_well": 0.0,
+                "c_ref": 0.1,
+                "c0": 0.2
+            },
+            "TI": {
+                "A_well": {
+                    "CU": 0.0,
+                    "TI": 0.5
+                },
+                "B_well": 0.0,
+                "c_ref": 0.8,
+                "c0": 0.7
+            }
+        }
+    },
+    "order_parameters": [
+        "LIQUID",
+        "SOLID"
+    ],
+    "comments": [
+        "none yet"
+    ]
+}
