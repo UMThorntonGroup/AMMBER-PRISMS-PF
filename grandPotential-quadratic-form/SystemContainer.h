@@ -45,19 +45,21 @@ template <int dim, int degree>
 class SystemContainer
 {
 public:
-  using scalarValue = dealii::VectorizedArray<double>;
-  using scalarGrad  = dealii::Tensor<1, dim, dealii::VectorizedArray<double>>;
+  using scalarValue     = dealii::VectorizedArray<double>;
+  using scalarGrad      = dealii::Tensor<1, dim, scalarValue>;
+  using scalarField     = Dual<scalarValue, dim>;
+  using scalarVariation = Variation<scalarValue, dim>;
 
   /**
    * @brief Data structure to hold the phase data
    */
   struct PhaseData
   {
-    FieldContainer<dim>               omega;
-    FieldContainer<dim>               h;
-    boost_vector<FieldContainer<dim>> delta_mu;
-    boost_vector<FieldContainer<dim>> delta_c;
-    boost_vector<FieldContainer<dim>> c_phase;
+    scalarField               omega;
+    scalarField               h;
+    boost_vector<scalarField> delta_mu;
+    boost_vector<scalarField> delta_c;
+    boost_vector<scalarField> c_phase;
   };
 
   /**
@@ -65,9 +67,9 @@ public:
    */
   struct OPData
   {
-    FieldContainer<dim>              eta;
-    Variation<dim>                   detadt;
-    std::vector<FieldContainer<dim>> dhdeta;
+    scalarField              eta;
+    scalarVariation          detadt;
+    std::vector<scalarField> dhdeta;
   };
 
   /**
@@ -84,9 +86,9 @@ public:
    */
   std::vector<PhaseData> phase_data;
 
-  boost_vector<FieldContainer<dim>> mu;
-  boost_vector<Variation<dim>>      dmudt;
-  boost_symmet<scalarValue>         M;
+  boost_vector<scalarField>     mu;
+  boost_vector<scalarVariation> dmudt;
+  boost_symmet<scalarValue>     M;
 
   /**
    * @brief Values associated with each order parameter
@@ -95,7 +97,7 @@ public:
   /**
    * @brief Sum of squares of the order parameters
    */
-  FieldContainer<dim> sum_sq_eta;
+  scalarField sum_sq_eta;
 
   /**
    * Constructor
@@ -104,8 +106,8 @@ public:
     : isoSys(sys)
     , userInputs(inputs)
     , phase_data(std::vector<PhaseData>(isoSys.phases.size()))
-    , mu(boost_vector<FieldContainer<dim>>(isoSys.num_comps))
-    , dmudt(boost_vector<Variation<dim>>(isoSys.num_comps))
+    , mu(boost_vector<scalarField>(isoSys.num_comps))
+    , dmudt(boost_vector<scalarVariation>(isoSys.num_comps))
     , M(boost_symmet<scalarValue>(isoSys.num_comps))
     , op_data({})
     , sum_sq_eta({})
@@ -238,9 +240,9 @@ public:
       {
         for (uint beta_index = 0; beta_index < op.dhdeta.size(); beta_index++)
           {
-            PhaseData           &beta   = phase_data[beta_index];
-            FieldContainer<dim> &dhdeta = op.dhdeta[beta_index];
-            dhdeta.val                  = dealii::make_vectorized_array(0.);
+            PhaseData   &beta   = phase_data[beta_index];
+            scalarField &dhdeta = op.dhdeta[beta_index];
+            dhdeta.val          = dealii::make_vectorized_array(0.);
             if (alpha_index == beta_index)
               {
                 dhdeta += 2.0 * op.eta;
@@ -266,7 +268,7 @@ public:
         double L     = 4.00 * phase_info.mu_int / isoSys.l_int / 3.00;
 
         // Interface term
-        Variation<dim> interface_term;
+        scalarVariation interface_term;
         interface_term.val =
           m * (op.eta.val * op.eta.val * op.eta.val - op.eta.val +
                2. * 1.5 * op.eta.val * (sum_sq_eta.val - op.eta.val * op.eta.val));
@@ -319,7 +321,7 @@ public:
   calculate_dmudt()
   {
     // Get the local susceptibility
-    boost_symmet<FieldContainer<dim>> local_suscept(isoSys.num_comps, isoSys.num_comps);
+    boost_symmet<scalarField> local_suscept(isoSys.num_comps, isoSys.num_comps);
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         const ParaboloidSystem::Phase &phase_info = isoSys.phases[phase_index];
@@ -334,8 +336,7 @@ public:
               }
           }
       }
-    boost_matrix<FieldContainer<dim>> local_suscept_inv =
-      inverse_from_cholesky(local_suscept);
+    boost_matrix<scalarField> local_suscept_inv = inverse_from_cholesky(local_suscept);
 
     // // Get just the gradient of mu
     // boost_vector<scalarGrad> mu_grad(isoSys.num_comps);
@@ -351,7 +352,7 @@ public:
     //  {
     //    dmudt[comp_index] += flux[comp_index];
     //  }
-    dmudt = boost_vector<Variation<dim>>(isoSys.num_comps);
+    dmudt = boost_vector<scalarVariation>(isoSys.num_comps);
     for (uint comp_row = 0; comp_row < isoSys.num_comps; comp_row++)
       {
         for (uint comp_col = 0; comp_col < isoSys.num_comps; comp_col++)
@@ -363,7 +364,7 @@ public:
     // Partition/conservation term
     for (auto &[phase_index, op] : op_data)
       {
-        boost_vector<FieldContainer<dim>> dcdeta_sum(isoSys.num_comps);
+        boost_vector<scalarField> dcdeta_sum(isoSys.num_comps);
         for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
           {
             dcdeta_sum += op.dhdeta.at(beta_index) * (phase_data[beta_index].c_phase);
@@ -435,7 +436,7 @@ public:
     variableContainer<dim, degree, dealii::VectorizedArray<double>> &pp_variable_list,
     uint                                                            &pp_index)
   {
-    boost_vector<FieldContainer<dim>> c_loc(isoSys.num_comps);
+    boost_vector<scalarField> c_loc(isoSys.num_comps);
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         const PhaseData &phase = phase_data.at(phase_index);
