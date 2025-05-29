@@ -5,50 +5,127 @@
         "energy_density_scale": 1.0
     },
     "convert_fractional_to_volumetric_energy": false,
-    "solution_component": "TA",
+    "solution_component": "DD",
     "components": [
-        "CU",
-        "TI"
+        "AA",
+        "BB",
+        "CC"
     ],
     "Vm": 1.0,
     "l_int": 2.0,
     "phases": {
-        "SOLID": {
+        "liquid": {
             "mu_int": 10.0,
             "D": 1.0,
             "sigma": 1.0,
-            "f_min": 0.0,
-            "CU": {
-                "k_well": 1.0,
-                "c_min": 0.8,
-                "x0": 0.8
+            "f_min": 1.0,
+            "AA": {
+                "k_well": 0.1,
+                "c_min": 0.25,
+                "x0": 0.25
             },
-            "TI": {
-                "k_well": 1.0,
-                "c_min": 0.1,
-                "x0": 0.1
+            "BB": {
+                "k_well": 0.1,
+                "c_min": 0.25,
+                "x0": 0.25
+            },
+            "CC": {
+                "k_well": 0.1,
+                "c_min": 0.25,
+                "x0": 0.25
             }
         },
-        "LIQUID": {
+        "phase_a": {
             "mu_int": 10.0,
             "D": 1.0,
             "sigma": 1.0,
             "f_min": 0.0,
-            "CU": {
-                "k_well": 0.5,
-                "c_min": 0.1,
-                "x0": 0.2
+            "AA": {
+                "k_well": 1.0,
+                "c_min": 1.0,
+                "x0": 1.0
             },
-            "TI": {
-                "k_well": 0.5,
-                "c_min": 0.8,
-                "x0": 0.7
+            "BB": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "CC": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            }
+        },
+        "phase_b": {
+            "mu_int": 10.0,
+            "D": 1.0,
+            "sigma": 1.0,
+            "f_min": 0.0,
+            "AA": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "BB": {
+                "k_well": 1.0,
+                "c_min": 1.0,
+                "x0": 1.0
+            },
+            "CC": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            }
+        },
+        "phase_c": {
+            "mu_int": 10.0,
+            "D": 1.0,
+            "sigma": 1.0,
+            "f_min": 0.0,
+            "AA": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "BB": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "CC": {
+                "k_well": 1.0,
+                "c_min": 1.0,
+                "x0": 1.0
+            }
+        },
+        "phase_d": {
+            "mu_int": 10.0,
+            "D": 1.0,
+            "sigma": 1.0,
+            "f_min": 0.0,
+            "AA": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "BB": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "CC": {
+                "k_well": 1.0,
+                "c_min": 0.0,
+                "x0": 0.0
             }
         }
     },
     "order_parameters": [
-        "LIQUID",
-        "SOLID"
+        "liquid",
+        "phase_a",
+        "phase_b",
+        "phase_c",
+        "phase_d"
     ],
     "comments": [
         "none yet"
