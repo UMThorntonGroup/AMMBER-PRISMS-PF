@@ -20,16 +20,18 @@ template <int dim, int degree>
 class SystemContainer
 {
 public:
-  using scalarValue = dealii::VectorizedArray<double>;
-  using scalarGrad  = dealii::Tensor<1, dim, dealii::VectorizedArray<double>>;
+  using scalarValue     = dealii::VectorizedArray<double>;
+  using scalarGrad      = dealii::Tensor<1, dim, scalarValue>;
+  using scalarField     = Dual<scalarValue, dim>;
+  using scalarVariation = Variation<scalarValue, dim>;
 
   /**
    * @brief Data structure to hold the phase data
    */
   struct PhaseData
   {
-    FieldContainer<dim> omega;
-    FieldContainer<dim> h;
+    scalarField omega;
+    scalarField h;
   };
 
   /**
@@ -37,9 +39,9 @@ public:
    */
   struct CompData
   {
-    FieldContainer<dim> mu;
-    Variation<dim>      dmudt;
-    scalarValue         M;
+    scalarField     mu;
+    scalarVariation dmudt;
+    scalarValue     M;
   };
 
   /**
@@ -47,9 +49,9 @@ public:
    */
   struct OPData
   {
-    FieldContainer<dim>              eta;
-    Variation<dim>                   detadt;
-    std::vector<FieldContainer<dim>> dhdeta;
+    scalarField              eta;
+    scalarVariation          detadt;
+    std::vector<scalarField> dhdeta;
   };
 
   /**
@@ -76,7 +78,7 @@ public:
   /**
    * @brief Sum of squares of the order parameters
    */
-  FieldContainer<dim> sum_sq_eta;
+  scalarField sum_sq_eta;
 
   /**
    * Constructor
@@ -212,9 +214,9 @@ public:
       {
         for (uint beta_index = 0; beta_index < op.dhdeta.size(); beta_index++)
           {
-            PhaseData           &beta   = phase_data[beta_index];
-            FieldContainer<dim> &dhdeta = op.dhdeta[beta_index];
-            dhdeta.val                  = dealii::make_vectorized_array(0.);
+            PhaseData   &beta   = phase_data[beta_index];
+            scalarField &dhdeta = op.dhdeta[beta_index];
+            dhdeta.val          = dealii::make_vectorized_array(0.);
             if (alpha_index == beta_index)
               {
                 dhdeta += 2.0 * op.eta;
@@ -240,7 +242,7 @@ public:
         double L     = 4.00 * phase_info.mu_int / isoSys.l_int / 3.00;
 
         // Interface term
-        Variation<dim> interface_term;
+        scalarVariation interface_term;
         interface_term.val =
           m * (op.eta.val * op.eta.val * op.eta.val - op.eta.val +
                2. * 1.5 * op.eta.val * (sum_sq_eta.val - op.eta.val * op.eta.val));
@@ -291,7 +293,7 @@ public:
         CompData &comp = comp_data[comp_index];
 
         // Calculate the susceptibility
-        FieldContainer<dim> chi_AA;
+        scalarField chi_AA;
         for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
           {
             PhaseData                             &phase = phase_data[phase_index];
@@ -307,7 +309,7 @@ public:
         // Partitioning term
         for (auto &[phase_index, op] : op_data)
           {
-            FieldContainer<dim> drhodeta_sum;
+            scalarField drhodeta_sum;
             for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
               {
                 auto &comp_info = isoSys.phases.at(beta_index).comps.at(comp_index);
