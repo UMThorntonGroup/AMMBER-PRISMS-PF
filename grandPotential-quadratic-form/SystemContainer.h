@@ -75,11 +75,11 @@ public:
   /**
    * @brief Pointer to the system parameters
    */
-  const ParaboloidSystem &isoSys;
+  std::shared_ptr<const ParaboloidSystem> isoSys;
   /**
    * @brief Pointer to the PRISMS-PF parameters
    */
-  const userInputParameters<dim> &userInputs;
+  std::shared_ptr<const userInputParameters<dim>> userInputs;
 
   /**
    * @brief Values associated with each phase
@@ -103,12 +103,12 @@ public:
    * Constructor
    */
   SystemContainer(const ParaboloidSystem &sys, const userInputParameters<dim> &inputs)
-    : isoSys(sys)
-    , userInputs(inputs)
-    , phase_data(std::vector<PhaseData>(isoSys.phases.size()))
-    , mu(boost_vector<scalarField>(isoSys.num_comps))
-    , dmudt(boost_vector<scalarVariation>(isoSys.num_comps))
-    , M(boost_symmet<scalarValue>(isoSys.num_comps))
+    : isoSys(std::make_shared<const ParaboloidSystem>(sys))
+    , userInputs(std::make_shared<const userInputParameters<dim>>(inputs))
+    , phase_data(std::vector<PhaseData>(isoSys->phases.size()))
+    , mu(boost_vector<scalarField>(isoSys->num_comps))
+    , dmudt(boost_vector<scalarVariation>(isoSys->num_comps))
+    , M(boost_symmet<scalarValue>(isoSys->num_comps))
     , op_data({})
     , sum_sq_eta({})
   {}
@@ -124,20 +124,20 @@ public:
     uint                                                                  &var_index)
   {
     op_data.clear();
-    op_data.reserve(isoSys.order_params.size());
-    mu.resize(isoSys.num_comps);
-    for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    op_data.reserve(isoSys->order_params.size());
+    mu.resize(isoSys->num_comps);
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
       {
         mu[comp_index].val  = variable_list.get_scalar_value(var_index);
         mu[comp_index].grad = variable_list.get_scalar_gradient(var_index);
         var_index++;
       }
-    for (const auto &phase_index : isoSys.order_params)
+    for (const auto &phase_index : isoSys->order_params)
       {
         OPData op;
         op.eta.val  = variable_list.get_scalar_value(var_index);
         op.eta.grad = variable_list.get_scalar_gradient(var_index);
-        op.dhdeta.resize(isoSys.phases.size());
+        op.dhdeta.resize(isoSys->phases.size());
         op_data.push_back({phase_index, op});
         var_index++;
       }
@@ -154,18 +154,18 @@ public:
     uint                                                                  &var_index)
   {
     op_data.clear();
-    op_data.reserve(isoSys.order_params.size());
-    mu.resize(isoSys.num_comps);
-    for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    op_data.reserve(isoSys->order_params.size());
+    mu.resize(isoSys->num_comps);
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
       {
         mu[comp_index].val = variable_list.get_scalar_value(var_index);
         var_index++;
       }
-    for (const auto &phase_index : isoSys.order_params)
+    for (const auto &phase_index : isoSys->order_params)
       {
         OPData op;
         op.eta.val = variable_list.get_scalar_value(var_index);
-        op.dhdeta.resize(isoSys.phases.size());
+        op.dhdeta.resize(isoSys->phases.size());
         op_data.push_back({phase_index, op});
         var_index++;
       }
@@ -176,7 +176,7 @@ public:
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const ParaboloidSystem::Phase &phase_info = isoSys.phases[phase_index];
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases[phase_index];
         PhaseData                     &phase      = phase_data[phase_index];
         phase.delta_mu                            = mu - phase_info.B_well;
         phase.delta_c = prod(phase_info.suscept, phase.delta_mu);
@@ -192,7 +192,7 @@ public:
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const ParaboloidSystem::Phase &phase_info = isoSys.phases[phase_index];
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases[phase_index];
         PhaseData                     &phase      = phase_data[phase_index];
         phase.omega =
           -0.5 * inner_prod(phase.delta_mu, prod(phase_info.suscept, phase.delta_mu)) -
@@ -261,11 +261,11 @@ public:
   {
     for (auto &[alpha_index, op] : op_data)
       {
-        const ParaboloidSystem::Phase &phase_info = isoSys.phases.at(alpha_index);
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(alpha_index);
 
-        double m     = 6.00 * phase_info.sigma / isoSys.l_int;
-        double kappa = 0.75 * phase_info.sigma * isoSys.l_int;
-        double L     = 4.00 * phase_info.mu_int / isoSys.l_int / 3.00;
+        double m     = 6.00 * phase_info.sigma / isoSys->l_int;
+        double kappa = 0.75 * phase_info.sigma * isoSys->l_int;
+        double L     = 4.00 * phase_info.mu_int / isoSys->l_int / 3.00;
 
         // Interface term
         scalarVariation interface_term;
@@ -292,17 +292,17 @@ public:
   void
   calculate_local_mobility()
   {
-    M = boost_symmet<scalarValue>(isoSys.num_comps);
+    M = boost_symmet<scalarValue>(isoSys->num_comps);
     M.clear();
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         PhaseData                     &phase      = phase_data[phase_index];
-        const ParaboloidSystem::Phase &phase_info = isoSys.phases.at(phase_index);
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(phase_index);
         const double                  &D          = phase_info.D;
         const boost_symmet<double>    &suscept    = phase_info.suscept;
-        /* M += phase.h.val * isoSys.phases.at(phase_index).D *
-             isoSys.phases.at(phase_index).suscept; */ // NOTATION
-        for (uint comp_row = 0; comp_row < isoSys.num_comps; comp_row++)
+        /* M += phase.h.val * isoSys->phases.at(phase_index).D *
+             isoSys->phases.at(phase_index).suscept; */ // NOTATION
+        for (uint comp_row = 0; comp_row < isoSys->num_comps; comp_row++)
           {
             for (uint comp_col = 0; comp_col <= comp_row; comp_col++)
               {
@@ -321,13 +321,13 @@ public:
   calculate_dmudt()
   {
     // Get the local susceptibility
-    boost_symmet<scalarField> local_suscept(isoSys.num_comps, isoSys.num_comps);
+    boost_symmet<scalarField> local_suscept(isoSys->num_comps, isoSys->num_comps);
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const ParaboloidSystem::Phase &phase_info = isoSys.phases[phase_index];
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases[phase_index];
         // local_suscept_inv += phase_info.suscept * phase_data[phase_index].h; //
         // NOTATION
-        for (uint comp_row = 0; comp_row < isoSys.num_comps; comp_row++)
+        for (uint comp_row = 0; comp_row < isoSys->num_comps; comp_row++)
           {
             for (uint comp_col = 0; comp_col <= comp_row; comp_col++)
               {
@@ -339,8 +339,8 @@ public:
     boost_matrix<scalarField> local_suscept_inv = inverse_from_cholesky(local_suscept);
 
     // // Get just the gradient of mu
-    // boost_vector<scalarGrad> mu_grad(isoSys.num_comps);
-    // for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    // boost_vector<scalarGrad> mu_grad(isoSys->num_comps);
+    // for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
     //   {
     //     mu_grad[comp_index] = mu[comp_index].grad;
     //   }
@@ -348,14 +348,14 @@ public:
     // Flux term
     // dmudt += prod(M, mu_grad); // NOTATION
     // boost_vector<scalarGrad> flux = prod(M, mu_grad);
-    // for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    // for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
     //  {
     //    dmudt[comp_index] += flux[comp_index];
     //  }
-    dmudt = boost_vector<scalarVariation>(isoSys.num_comps);
-    for (uint comp_row = 0; comp_row < isoSys.num_comps; comp_row++)
+    dmudt = boost_vector<scalarVariation>(isoSys->num_comps);
+    for (uint comp_row = 0; comp_row < isoSys->num_comps; comp_row++)
       {
-        for (uint comp_col = 0; comp_col < isoSys.num_comps; comp_col++)
+        for (uint comp_col = 0; comp_col < isoSys->num_comps; comp_col++)
           {
             dmudt[comp_row].vec += M(comp_row, comp_col) * mu[comp_col].grad;
           }
@@ -364,13 +364,13 @@ public:
     // Partition/conservation term
     for (auto &[phase_index, op] : op_data)
       {
-        boost_vector<scalarField> dcdeta_sum(isoSys.num_comps);
+        boost_vector<scalarField> dcdeta_sum(isoSys->num_comps);
         for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
           {
             dcdeta_sum += op.dhdeta.at(beta_index) * (phase_data[beta_index].c_phase);
           }
         // dmudt -= op.detadt * dcdeta_sum; // NOTATION
-        for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+        for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
           {
             dmudt[comp_index] -= op.detadt * dcdeta_sum[comp_index];
           }
@@ -404,24 +404,24 @@ public:
     variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
     uint                                                            &var_index)
   {
-    for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
       {
         variable_list.set_scalar_value_term_RHS(var_index,
                                                 mu[comp_index].val +
                                                   dmudt[comp_index].val *
-                                                    userInputs.dtValue);
+                                                    userInputs->dtValue);
         variable_list.set_scalar_gradient_term_RHS(var_index,
                                                    -dmudt[comp_index].vec *
-                                                     userInputs.dtValue);
+                                                     userInputs->dtValue);
         var_index++;
       }
     for (auto &[phase_index, op] : op_data)
       {
         variable_list.set_scalar_value_term_RHS(var_index,
                                                 op.eta.val +
-                                                  op.detadt.val * userInputs.dtValue);
+                                                  op.detadt.val * userInputs->dtValue);
         variable_list.set_scalar_gradient_term_RHS(var_index,
-                                                   -op.detadt.vec * userInputs.dtValue);
+                                                   -op.detadt.vec * userInputs->dtValue);
         var_index++;
       }
   }
@@ -436,13 +436,13 @@ public:
     variableContainer<dim, degree, dealii::VectorizedArray<double>> &pp_variable_list,
     uint                                                            &pp_index)
   {
-    boost_vector<scalarField> c_loc(isoSys.num_comps);
+    boost_vector<scalarField> c_loc(isoSys->num_comps);
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         const PhaseData &phase = phase_data.at(phase_index);
         c_loc += phase.h * phase.c_phase;
       }
-    for (uint comp_index = 0; comp_index < isoSys.num_comps; comp_index++)
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
       {
         pp_variable_list.set_scalar_value_term_RHS(pp_index, c_loc[comp_index].val);
         pp_index++;
