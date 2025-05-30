@@ -23,7 +23,7 @@ public:
     std::ifstream ifs("system.json");
     ifs >> model_parameters;
     ifs.close();
-    isoSys.from_json(model_parameters);
+    isoSys.from_json(model_parameters, &userInputs);
     isoSys.print_parameters();
     print_initial_energies();
     estimate_stability();

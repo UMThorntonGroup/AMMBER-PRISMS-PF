@@ -1,17 +1,20 @@
 #ifndef PARABOLOIDSYSTEM_H
 #define PARABOLOIDSYSTEM_H
 
+#include <core/userInputParameters.h>
 #include <core/variableAttributeLoader.h>
 #include <iomanip>
 #include <iostream>
 #include <json.hpp>
 #include <map>
+#include <memory>
 #include <string>
 
 /**
  * @brief Class containing the thermodynamic and kinetic parameters needed for the grand
  * potential based model using simplified second-order polynomials
  */
+template <int dim>
 class ParaboloidSystem
 {
 public:
@@ -88,9 +91,10 @@ public:
    * @brief JSON Constructor
    * @param TCSystem JSON object containing the parameters
    */
-  ParaboloidSystem(const nlohmann::json &TCSystem)
+  ParaboloidSystem(const nlohmann::json      &TCSystem,
+                   const userInputParameters *userInputs = nullptr)
   {
-    from_json(TCSystem);
+    from_json(TCSystem, userInputs);
   }
 
   /**
@@ -98,7 +102,8 @@ public:
    * @param j JSON object containing the parameters
    */
   void
-  from_json(const nlohmann::json &j)
+  from_json(const nlohmann::json                      &j,
+            std::shared_ptr<const userInputParameters> userInputs = nullptr)
   {
     // Parse Dimensions
     length_scale = j.at("dimensions").at("length_scale").get<double>();
@@ -157,6 +162,9 @@ public:
         order_params.push_back(phase_index);
       }
 
+    // Automatically determine scales if set to zero
+    auto_select_scales(userInputs);
+
     // Convert to volumetric energy if necessary
     if (volumetrize)
       {
@@ -174,198 +182,308 @@ public:
   }
 
   /**
-   * @brief Non-dimensionalize the parameters using the provided unit scales.
+   * @brief Automatically select scales if they are set to zero
    */
   void
-  nondimensionalize()
+  auto_select_scales(const userInputParameters *userInputs)
   {
-    const double &l0 = length_scale;
-    const double &t0 = time_scale;
-    const double &E0 = energy_scale; // energy density
-    Vm               = _Vm / (l0 * l0 * l0);
-    l_int            = _l_int / (l0);
-    for (Phase &phase : phases)
+    if (userInputs == nullptr)
       {
-        phase.mu_int = phase._mu_int / (l0 / (E0 * t0));
-        phase.sigma  = phase._sigma / (E0 * l0);
-        phase.f_min  = phase._f_min / E0;
-        phase.D      = phase._D / ((l0 * l0) / t0);
-        for (PhaseCompInfo &comp : phase.comps)
+        return;
+      }
+    // If l_int is zero, guess it based on thermodynamics
+    // ========================================================================
+    // if (_l_int == 0.0)
+    //   {
+    //     _l_int = phases[0]._f_min;
+    //   }
+    // ========================================================================
+
+    // If length_scale is zero, set it based on the interface width and domain
+    // discretization
+    // ========================================================================
+    double           min_dx              = std::numeric_limits<double>::max();
+    constexpr double points_in_interface = 6.0;
+    for (unsigned int i = 0; i < dim; i++)
+      {
+        min_dx =
+          std::min(min_dx,
+                   double(userInputs->subdivisions[i]) * userInputs->domain_size[i] /
+                     std::pow(2.0, userInputs->refine_factor));
+      }
+    if (length_scale == 0.0)
+      {
+        length_scale = _l_int / (min_dx * points_in_interface);
+      }
+    // ========================================================================
+
+    constexpr double time_scale_factor               = 0.5; // Design factor for stability
+    constexpr double theoretical_max_gradient_factor = 0.25;
+    double           max_gradient_factor             = 0.0;
+    std::string      stability_limiter               = "diffusion";
+    std::string      limiting_phase;
+    const double     gradient_prefactor = userInputs->dtValue *
+                                      (userInputs->degree * userInputs->degree) /
+                                      (min_dx * min_dx * length_scale * length_scale);
+    for (const auto &phase : isoSys.phases)
+      {
+        const double diffusion_gradient_factor = phase._D * gradient_prefactor;
+        // mu*sigma = L*kappa
+        const double order_parameter_gradient_factor =
+          (phase._mu_int * phase._sigma) * gradient_prefactor;
+
+        if (diffusion_gradient_factor > max_gradient_factor)
           {
-            comp.k_well = comp._k_well / E0;
+            max_gradient_factor = diffusion_gradient_factor;
+            stability_limiter   = "diffusion";
+            limiting_phase      = phase.name;
+          }
+        if (order_parameter_gradient_factor > max_gradient_factor)
+          {
+            max_gradient_factor = order_parameter_gradient_factor;
+            stability_limiter   = "order parameter evolution";
+            limiting_phase      = phase.name;
           }
       }
-  }
-
-  /**
-   * @brief Print the parameters to the console
-   */
-  void
-  print_parameters()
-  {
-    // Set column width
-    const int col_width  = 15;
-    const int line_width = 45;
-
-    // Print header
-    std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width)
-              << "Dimensionless" << std::setw(col_width) << "Dimensional"
-              << "\n";
-    std::cout << std::string(line_width, '-') << "\n";
-
-    // Print Vm and l_int
-    std::cout << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm
-              << std::setw(col_width) << _Vm << "\n";
-    std::cout << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int
-              << std::setw(col_width) << _l_int << "\n";
-
-    // Print component information
-    for (const auto &comp_name : comp_names)
+    // If time_scale is zero, set it based on the stability limit
+    // ========================================================================
+    const double reccommended_time_scale =
+      time_scale_factor * theoretical_max_gradient_factor / max_gradient_factor;
+    if (time_scale == 0.0)
       {
-        std::cout << std::setw(col_width) << comp_name << "\n";
+        time_scale = reccommended_time_scale;
       }
-    std::cout << "\n";
-
-    // Print phase information
-    for (const Phase &phase : phases)
+    else
       {
-        std::cout << std::setw(col_width) << phase.name << "\n";
-        std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width)
-                  << phase.mu_int << std::setw(col_width) << phase._mu_int << "\n";
-        std::cout << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D
-                  << std::setw(col_width) << phase._D << "\n";
-        std::cout << std::setw(col_width) << "sigma:" << std::setw(col_width)
-                  << phase.sigma << std::setw(col_width) << phase._sigma << "\n";
-
-        for (const PhaseCompInfo &comp : phase.comps)
+        // If time_scale is not zero, ensure it is not larger than the stability limit
+        if (time_scale > reccommended_time_scale)
           {
-            std::cout << std::setw(col_width) << comp.name << "\n";
-            std::cout << std::setw(col_width) << "k_well:" << std::setw(col_width)
-                      << comp.k_well << std::setw(col_width) << comp._k_well << "\n";
-            std::cout << std::setw(col_width) << "c_min:" << std::setw(col_width)
-                      << comp.c_min << "\n";
-            std::cout << std::setw(col_width) << "x0:" << std::setw(col_width) << comp.x0
-                      << "\n";
+            std::cout << "Warning: Provided time scale is larger than the stability "
+                         "limit using a design factor of "
+                      << time_scale_factor
+                      << ".\n"
+                         "We recommend using a time scale of "
+                      << reccommended_time_scale << " or a time step of "
+                      << userInputs->dtValue * reccommended_time_scale / time_scale
+                      << " to ensure stability.\n";
           }
-        std::cout << "\n";
       }
-  }
+    // ========================================================================
 
-  /**
-   * @brief Declare the fields needed for the PDE in PRISMS-PF
-   * @param loader Pointer to the attribute loader (equations.cc)
-   */
-  void
-  load_variables(customAttributeLoader *loader, uint &var_index)
-  {
-    // Get names for mu fields
-    std::vector<std::string> mu_names;
-    std::vector<std::string> grad_mu_names;
-    std::cout << "Comp names: ";
-    for (const auto &comp_name : comp_names)
+    // If energy_scale is zero, set it to the energy density of the first phase
+    // ========================================================================
+    if (energy_scale == 0.0)
       {
-        std::string var_name = "mu_" + comp_name;
-        mu_names.push_back(var_name);
-        grad_mu_names.push_back("grad(" + var_name + ")");
-        std::cout << var_name << " ";
-      }
-    std::cout << "\n"
-              << "Order parameter names: ";
-    // Get names for order parameter fields
-    std::vector<std::string> op_names;
-    std::vector<std::string> grad_op_names;
-    std::map<uint, uint>     phase_counter;
-    for (const auto &phase_index : order_params)
-      {
-        if (phase_counter.find(phase_index) == phase_counter.end())
+        double minimum_diagonal_curvature = std::numeric_limits<double>::max();
+        for (const auto &phase : phases)
           {
-            phase_counter[phase_index] = 0;
+            for (const auto &comp : phase.comps)
+              {
+                minimum_diagonal_curvature =
+                  std::min(minimum_diagonal_curvature, comp._k_well);
+              }
           }
-        std::string phase_name = phase_names[phase_index];
-        std::string var_name =
-          phase_name + "_" + std::to_string(phase_counter[phase_index]);
-        op_names.push_back(var_name);
-        grad_op_names.push_back("grad(" + var_name + ")");
-        phase_counter[phase_index]++;
-        std::cout << var_name << " ";
       }
-    std::cout << "\n";
-
-    // Assign fields
-    for (const auto &mu_name : mu_names)
-      {
-        loader->set_variable_name(var_index, mu_name);
-        loader->set_variable_type(var_index, SCALAR);
-        loader->set_variable_equation_type(var_index, EXPLICIT_TIME_DEPENDENT);
-        // loader->set_allowed_to_nucleate			(var_index, (phase_index>0));
-        loader->set_need_value_nucleation(var_index, true);
-        loader->insert_dependencies_value_term_RHS(var_index, mu_names);
-        loader->insert_dependencies_value_term_RHS(var_index, grad_mu_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
-        var_index++;
-      }
-    for (const auto &op_name : op_names)
-      {
-        loader->set_variable_name(var_index, op_name);
-        loader->set_variable_type(var_index, SCALAR);
-        loader->set_variable_equation_type(var_index, EXPLICIT_TIME_DEPENDENT);
-        loader->set_need_value_nucleation(var_index, true);
-        loader->insert_dependencies_value_term_RHS(var_index, mu_names);
-        loader->insert_dependencies_value_term_RHS(var_index, grad_mu_names);
-        loader->insert_dependencies_value_term_RHS(var_index, op_names);
-        loader->insert_dependencies_value_term_RHS(var_index, grad_op_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, op_names);
-        loader->insert_dependencies_gradient_term_RHS(var_index, grad_op_names);
-        var_index++;
-      }
+    // ========================================================================
   }
 
-  /**
-   * @brief Declare the post-processed fields in PRISMS-PF
-   * @param loader Pointer to the attribute loader (postprocess.cc)
-   */
-  void
-  load_pp_variables(customAttributeLoader *loader, uint &pp_index)
-  {
-    // Get names for comp fields
-    std::vector<std::string> c_names;
-    std::vector<std::string> mu_names;
-    for (const auto &comp_name : comp_names)
-      {
-        c_names.push_back("c_" + comp_name);
-        mu_names.push_back("mu_" + comp_name);
-      }
-    // Get names for order parameter fields
-    std::vector<std::string> op_names;
-    std::map<uint, uint>     phase_counter;
-    for (const auto &phase_index : order_params)
-      {
-        if (phase_counter.find(phase_index) == phase_counter.end())
-          {
-            phase_counter[phase_index] = 0;
-          }
-        std::string phase_name = phase_names[phase_index];
-        std::string var_name =
-          phase_name + "_" + std::to_string(phase_counter[phase_index]);
-        op_names.push_back(var_name);
-        phase_counter[phase_index]++;
-      }
-    std::cout << "\n";
+}
 
-    // Assign fields
-    for (const auto &c_name : c_names)
-      {
-        loader->set_variable_name(pp_index, c_name);
-        loader->set_variable_type(pp_index, SCALAR);
-        loader->set_variable_equation_type(pp_index, EXPLICIT_TIME_DEPENDENT);
-        loader->insert_dependencies_value_term_RHS(pp_index, mu_names);
-        loader->insert_dependencies_value_term_RHS(pp_index, op_names);
-        pp_index++;
-      }
-  }
-};
+/**
+ * @brief Non-dimensionalize the parameters using the provided unit scales.
+ */
+void
+nondimensionalize()
+
+{
+  const double &l0 = length_scale;
+  const double &t0 = time_scale;
+  const double &E0 = energy_scale; // energy density
+  Vm               = _Vm / (l0 * l0 * l0);
+  l_int            = _l_int / (l0);
+  for (Phase &phase : phases)
+    {
+      phase.mu_int = phase._mu_int / (l0 / (E0 * t0));
+      phase.sigma  = phase._sigma / (E0 * l0);
+      phase.f_min  = phase._f_min / E0;
+      phase.D      = phase._D / ((l0 * l0) / t0);
+      for (PhaseCompInfo &comp : phase.comps)
+        {
+          comp.k_well = comp._k_well / E0;
+        }
+    }
+}
+
+/**
+ * @brief Print the parameters to the console
+ */
+void
+print_parameters()
+{
+  // Set column width
+  const int col_width  = 15;
+  const int line_width = 45;
+
+  // Print header
+  std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width)
+            << "Dimensionless" << std::setw(col_width) << "Dimensional"
+            << "\n";
+  std::cout << std::string(line_width, '-') << "\n";
+
+  // Print Vm and l_int
+  std::cout << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm
+            << std::setw(col_width) << _Vm << "\n";
+  std::cout << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int
+            << std::setw(col_width) << _l_int << "\n";
+
+  // Print component information
+  for (const auto &comp_name : comp_names)
+    {
+      std::cout << std::setw(col_width) << comp_name << "\n";
+    }
+  std::cout << "\n";
+
+  // Print phase information
+  for (const Phase &phase : phases)
+    {
+      std::cout << std::setw(col_width) << phase.name << "\n";
+      std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width)
+                << phase.mu_int << std::setw(col_width) << phase._mu_int << "\n";
+      std::cout << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D
+                << std::setw(col_width) << phase._D << "\n";
+      std::cout << std::setw(col_width) << "sigma:" << std::setw(col_width) << phase.sigma
+                << std::setw(col_width) << phase._sigma << "\n";
+
+      for (const PhaseCompInfo &comp : phase.comps)
+        {
+          std::cout << std::setw(col_width) << comp.name << "\n";
+          std::cout << std::setw(col_width) << "k_well:" << std::setw(col_width)
+                    << comp.k_well << std::setw(col_width) << comp._k_well << "\n";
+          std::cout << std::setw(col_width) << "c_min:" << std::setw(col_width)
+                    << comp.c_min << "\n";
+          std::cout << std::setw(col_width) << "x0:" << std::setw(col_width) << comp.x0
+                    << "\n";
+        }
+      std::cout << "\n";
+    }
+}
+
+/**
+ * @brief Declare the fields needed for the PDE in PRISMS-PF
+ * @param loader Pointer to the attribute loader (equations.cc)
+ */
+void
+load_variables(customAttributeLoader *loader, uint &var_index)
+{
+  // Get names for mu fields
+  std::vector<std::string> mu_names;
+  std::vector<std::string> grad_mu_names;
+  std::cout << "Comp names: ";
+  for (const auto &comp_name : comp_names)
+    {
+      std::string var_name = "mu_" + comp_name;
+      mu_names.push_back(var_name);
+      grad_mu_names.push_back("grad(" + var_name + ")");
+      std::cout << var_name << " ";
+    }
+  std::cout << "\n"
+            << "Order parameter names: ";
+  // Get names for order parameter fields
+  std::vector<std::string> op_names;
+  std::vector<std::string> grad_op_names;
+  std::map<uint, uint>     phase_counter;
+  for (const auto &phase_index : order_params)
+    {
+      if (phase_counter.find(phase_index) == phase_counter.end())
+        {
+          phase_counter[phase_index] = 0;
+        }
+      std::string phase_name = phase_names[phase_index];
+      std::string var_name =
+        phase_name + "_" + std::to_string(phase_counter[phase_index]);
+      op_names.push_back(var_name);
+      grad_op_names.push_back("grad(" + var_name + ")");
+      phase_counter[phase_index]++;
+      std::cout << var_name << " ";
+    }
+  std::cout << "\n";
+
+  // Assign fields
+  for (const auto &mu_name : mu_names)
+    {
+      loader->set_variable_name(var_index, mu_name);
+      loader->set_variable_type(var_index, SCALAR);
+      loader->set_variable_equation_type(var_index, EXPLICIT_TIME_DEPENDENT);
+      // loader->set_allowed_to_nucleate			(var_index, (phase_index>0));
+      loader->set_need_value_nucleation(var_index, true);
+      loader->insert_dependencies_value_term_RHS(var_index, mu_names);
+      loader->insert_dependencies_value_term_RHS(var_index, grad_mu_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
+      var_index++;
+    }
+  for (const auto &op_name : op_names)
+    {
+      loader->set_variable_name(var_index, op_name);
+      loader->set_variable_type(var_index, SCALAR);
+      loader->set_variable_equation_type(var_index, EXPLICIT_TIME_DEPENDENT);
+      loader->set_need_value_nucleation(var_index, true);
+      loader->insert_dependencies_value_term_RHS(var_index, mu_names);
+      loader->insert_dependencies_value_term_RHS(var_index, grad_mu_names);
+      loader->insert_dependencies_value_term_RHS(var_index, op_names);
+      loader->insert_dependencies_value_term_RHS(var_index, grad_op_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, op_names);
+      loader->insert_dependencies_gradient_term_RHS(var_index, grad_op_names);
+      var_index++;
+    }
+}
+
+/**
+ * @brief Declare the post-processed fields in PRISMS-PF
+ * @param loader Pointer to the attribute loader (postprocess.cc)
+ */
+void
+load_pp_variables(customAttributeLoader *loader, uint &pp_index)
+{
+  // Get names for comp fields
+  std::vector<std::string> c_names;
+  std::vector<std::string> mu_names;
+  for (const auto &comp_name : comp_names)
+    {
+      c_names.push_back("c_" + comp_name);
+      mu_names.push_back("mu_" + comp_name);
+    }
+  // Get names for order parameter fields
+  std::vector<std::string> op_names;
+  std::map<uint, uint>     phase_counter;
+  for (const auto &phase_index : order_params)
+    {
+      if (phase_counter.find(phase_index) == phase_counter.end())
+        {
+          phase_counter[phase_index] = 0;
+        }
+      std::string phase_name = phase_names[phase_index];
+      std::string var_name =
+        phase_name + "_" + std::to_string(phase_counter[phase_index]);
+      op_names.push_back(var_name);
+      phase_counter[phase_index]++;
+    }
+  std::cout << "\n";
+
+  // Assign fields
+  for (const auto &c_name : c_names)
+    {
+      loader->set_variable_name(pp_index, c_name);
+      loader->set_variable_type(pp_index, SCALAR);
+      loader->set_variable_equation_type(pp_index, EXPLICIT_TIME_DEPENDENT);
+      loader->insert_dependencies_value_term_RHS(pp_index, mu_names);
+      loader->insert_dependencies_value_term_RHS(pp_index, op_names);
+      pp_index++;
+    }
+}
+}
+;
 
 #endif
