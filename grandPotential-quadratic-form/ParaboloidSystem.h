@@ -8,6 +8,7 @@
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 
+#include <core/userInputParameters.h>
 #include <core/variableAttributeLoader.h>
 #include <iomanip>
 #include <iostream>
@@ -96,18 +97,22 @@ public:
   /**
    * @brief JSON Constructor
    * @param TCSystem JSON object containing the parameters
+   * @param userInputs Pointer to user input parameters for automatic scale selection
    */
-  ParaboloidSystem(const nlohmann::json &TCSystem)
+  template <int dim = 2>
+  ParaboloidSystem(const nlohmann::json           &TCSystem,
+                   const userInputParameters<dim> *userInputs = nullptr)
   {
-    from_json(TCSystem);
+    from_json(TCSystem, userInputs);
   }
 
   /**
    * @brief Load the parameters from a JSON object
    * @param j JSON object containing the parameters
    */
+  template <int dim = 2>
   void
-  from_json(const nlohmann::json &j)
+  from_json(const nlohmann::json &j, const userInputParameters<dim> *userInputs = nullptr)
   {
     // Parse Dimensions
     length_scale = j.at("dimensions").at("length_scale").get<double>();
@@ -135,28 +140,28 @@ public:
     // Parse phases
     phases.clear();
     phase_names.clear();
-    for (const auto &[phase_name, phase_data] : j.at("phases").items())
+    for (const auto &[phase_name, phase_info] : j.at("phases").items())
       {
         Phase phase;
-        phase.name    = phase_name;
-        phase._mu_int = phase_data.at("mu_int").get<double>();
-        phase._sigma  = phase_data.at("sigma").get<double>();
-        phase._D      = phase_data.at("D").get<double>();
+        phase.name = phase_name;
+        phase_info.at("mu_int").get_to(phase._mu_int);
+        phase_info.at("sigma").get_to(phase._sigma);
+        phase_info.at("D").get_to(phase._D);
 
         phase._A_well = boost_symmet<double>(num_comps, num_comps);
         phase._B_well = boost_vector<double>(num_comps);
-        phase._D_well = phase_data.at("D_well").get<double>();
-        phase.c_ref   = boost_vector<double>(num_comps);
-        phase.c0      = boost_vector<double>(num_comps);
+        phase_info.at("D_well").get_to(phase._D_well);
+        phase.c_ref = boost_vector<double>(num_comps);
+        phase.c0    = boost_vector<double>(num_comps);
 
         // Parse components
         for (uint comp_index = 0; comp_index < num_comps; comp_index++)
           {
             const std::string &comp_name = comp_names[comp_index];
-            const auto        &comp_data = phase_data.at(comp_name);
-            phase.c_ref[comp_index]      = comp_data.at("c_ref").get<double>();
-            phase._B_well[comp_index]    = comp_data.at("B_well").get<double>();
-            phase.c0[comp_index]         = comp_data.at("c0").get<double>();
+            const auto        &comp_data = phase_info.at(comp_name);
+            comp_data.at("c_ref").get_to(phase.c_ref[comp_index]);
+            comp_data.at("B_well").get_to(phase._B_well[comp_index]);
+            comp_data.at("c0").get_to(phase.c0[comp_index]);
 
             const auto &A_well_row = comp_data.at("A_well");
             for (uint col_comp_index = 0; col_comp_index < num_comps; col_comp_index++)
@@ -166,8 +171,8 @@ public:
                   {
                     continue;
                   }
-                phase._A_well(comp_index, col_comp_index) =
-                  A_well_row.at(col_comp_name).get<double>();
+                A_well_row.at(col_comp_name)
+                  .get_to(phase._A_well(comp_index, col_comp_index));
               }
           }
         phases.push_back(phase);
@@ -183,6 +188,9 @@ public:
         order_params.push_back(phase_index);
       }
 
+    // Automatically determine scales if set to zero
+    auto_select_scales(userInputs);
+
     // Convert to volumetric energy if necessary
     if (volumetrize)
       {
@@ -195,6 +203,125 @@ public:
       }
     // Non-dimensionalize
     nondimensionalize();
+  }
+
+  /**
+   * @brief Automatically select scales if they are set to zero
+   */
+  template <int dim = 2>
+  void
+  auto_select_scales(const userInputParameters<dim> *userInputs)
+  {
+    if (userInputs == nullptr)
+      {
+        return;
+      }
+    // If l_int is zero, guess it based on thermodynamics
+    // ========================================================================
+    // if (_l_int == 0.0)
+    //   {
+    //     _l_int = phases[0]._f_min;
+    //   }
+    // ========================================================================
+
+    // If length_scale is zero, set it based on the interface width and domain
+    // discretization
+    // ========================================================================
+    double           min_dx              = std::numeric_limits<double>::max();
+    constexpr double points_in_interface = 6.0;
+    for (unsigned int i = 0; i < dim; i++)
+      {
+        min_dx =
+          std::min(min_dx,
+                   double(userInputs->subdivisions[i]) * userInputs->domain_size[i] /
+                     std::pow(2.0, userInputs->refine_factor));
+      }
+    if (length_scale == 0.0)
+      {
+        length_scale = _l_int / (min_dx * points_in_interface);
+        std::cout << "Setting length scale to " << length_scale
+                  << " based on the interface width and domain discretization.\n";
+      }
+    // ========================================================================
+
+    constexpr double time_scale_factor               = 0.5; // Design factor for stability
+    constexpr double theoretical_max_gradient_factor = 0.25;
+    double           max_gradient_factor             = 0.0;
+    std::string      stability_limiter               = "diffusion";
+    std::string      limiting_phase;
+    const double     gradient_prefactor = userInputs->dtValue *
+                                      (userInputs->degree * userInputs->degree) /
+                                      (min_dx * min_dx * length_scale * length_scale);
+    for (const auto &phase : phases)
+      {
+        const double diffusion_gradient_factor = phase._D * gradient_prefactor;
+        // mu*sigma = L*kappa
+        const double order_parameter_gradient_factor =
+          (phase._mu_int * phase._sigma) * gradient_prefactor;
+
+        if (diffusion_gradient_factor > max_gradient_factor)
+          {
+            max_gradient_factor = diffusion_gradient_factor;
+            stability_limiter   = "diffusion";
+            limiting_phase      = phase.name;
+          }
+        if (order_parameter_gradient_factor > max_gradient_factor)
+          {
+            max_gradient_factor = order_parameter_gradient_factor;
+            stability_limiter   = "order parameter evolution";
+            limiting_phase      = phase.name;
+          }
+      }
+    // If time_scale is zero, set it based on the stability limit
+    // ========================================================================
+    const double reccommended_time_scale =
+      time_scale_factor * theoretical_max_gradient_factor / max_gradient_factor;
+    if (time_scale == 0.0)
+      {
+        time_scale = reccommended_time_scale;
+        std::cout << "\nSetting time scale to " << time_scale
+                  << " based on the stability limit using a design factor of "
+                  << time_scale_factor << ".\n"
+                  << "The numerical stability for this set of parameters is limited by "
+                  << stability_limiter << " in phase " << limiting_phase << ".\n";
+      }
+    else
+      {
+        // If time_scale is not zero, ensure it is not larger than the stability limit
+        if (time_scale > reccommended_time_scale)
+          {
+            std::cout << "\nWarning: Provided time scale is larger than the stability "
+                         "limit using a design factor of "
+                      << time_scale_factor
+                      << ".\n"
+                         "We recommend using a time scale of "
+                      << reccommended_time_scale << " or a time step of "
+                      << userInputs->dtValue * reccommended_time_scale / time_scale
+                      << " to ensure stability.\n\n";
+          }
+      }
+    // ========================================================================
+
+    // If energy_scale is zero, set it to the lowest free energy curvature
+    // TODO: Choose the lowest principal eigenvalue of the curvature matrix instead
+    // ========================================================================
+    if (energy_scale == 0.0)
+      {
+        double minimum_diagonal_curvature = std::numeric_limits<double>::max();
+        for (const auto &phase : phases)
+          {
+            for (unsigned int comp_index = 0; comp_index < num_comps; ++comp_index)
+              {
+                minimum_diagonal_curvature =
+                  std::min(minimum_diagonal_curvature,
+                           phase._A_well(comp_index, comp_index));
+              }
+          }
+        energy_scale = minimum_diagonal_curvature;
+        std::cout << "Setting energy scale to " << energy_scale
+                  << " based on the lowest free energy curvature diagonal.\n";
+      }
+    // ========================================================================
   }
 
   /**
