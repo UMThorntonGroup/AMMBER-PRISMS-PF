@@ -21,12 +21,15 @@ public:
   {
     // Load the model parameters
     std::ifstream ifs("system.json");
+    if (!ifs.is_open())
+      {
+        throw std::runtime_error("Could not open system.json");
+      }
+    nlohmann::json model_parameters;
     ifs >> model_parameters;
-    ifs.close();
-    isoSys.from_json(model_parameters);
+    isoSys.from_json(model_parameters, &userInputs);
     isoSys.print_parameters();
     print_initial_energies();
-    estimate_stability();
     print_interface_properties();
   }
 
@@ -105,7 +108,7 @@ private:
   [[nodiscard]] double
   interface(double x) const
   {
-    return 0.5 * (1.0 + std::tanh(2.0 * x / isoSys.l_int));
+    return 0.5 * (2.0 + std::tanh(1.0 * x / isoSys.l_int));
   }
 
   /**
@@ -147,58 +150,6 @@ private:
           }
         std::cout << "\n";
       }
-  }
-
-  /**
-   * @brief Function to estimate the numerical stability of the system based on the
-   * parameters provided and give a recommendation for the time step
-   */
-  void
-  estimate_stability()
-  {
-    double min_dx = std::numeric_limits<double>::max();
-    for (unsigned int i = 0; i < dim; i++)
-      {
-        min_dx = std::min(min_dx,
-                          double(userInputs.subdivisions[i]) * userInputs.domain_size[i] /
-                            std::pow(2.0, userInputs.refine_factor));
-      }
-    constexpr double theoretical_max_gradient_factor = 0.25;
-    double           max_gradient_factor             = 0.0;
-    std::string      stability_limiter               = "diffusion";
-    std::string      limiting_phase;
-    for (const auto &phase : isoSys.phases)
-      {
-        const double gradient_prefactor = userInputs.dtValue *
-                                          (userInputs.degree * userInputs.degree) /
-                                          (min_dx * min_dx);
-
-        const double diffusion_gradient_factor = phase.D * gradient_prefactor;
-        // mu*sigma = L*kappa
-        const double order_parameter_gradient_factor =
-          (phase.mu_int * phase.sigma) * gradient_prefactor;
-
-        if (diffusion_gradient_factor > max_gradient_factor)
-          {
-            max_gradient_factor = diffusion_gradient_factor;
-            stability_limiter   = "diffusion";
-            limiting_phase      = phase.name;
-          }
-        if (order_parameter_gradient_factor > max_gradient_factor)
-          {
-            max_gradient_factor = order_parameter_gradient_factor;
-            stability_limiter   = "order parameter evolution";
-            limiting_phase      = phase.name;
-          }
-      }
-    std::cout << "Then numerical stability for this set of parameters is limited by "
-              << stability_limiter << " in phase " << limiting_phase << ".\n";
-    std::cout << "The reccommended maximum time step (using a design factor of "
-              << timestep_alpha
-              << ") is " /* << std::scientific << std::setprecision(2) */
-              << timestep_alpha * userInputs.dtValue * theoretical_max_gradient_factor /
-                   max_gradient_factor
-              << ".\n\n" /* << std::defaultfloat << std::setprecision(6) */;
   }
 
   /**

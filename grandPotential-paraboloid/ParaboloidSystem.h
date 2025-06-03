@@ -1,6 +1,7 @@
 #ifndef PARABOLOIDSYSTEM_H
 #define PARABOLOIDSYSTEM_H
 
+#include <core/userInputParameters.h>
 #include <core/variableAttributeLoader.h>
 #include <iomanip>
 #include <iostream>
@@ -87,18 +88,22 @@ public:
   /**
    * @brief JSON Constructor
    * @param TCSystem JSON object containing the parameters
+   * @param userInputs Pointer to user input parameters for automatic scale selection
    */
-  ParaboloidSystem(const nlohmann::json &TCSystem)
+  template <int dim = 2>
+  ParaboloidSystem(const nlohmann::json           &TCSystem,
+                   const userInputParameters<dim> *userInputs = nullptr)
   {
-    from_json(TCSystem);
+    from_json(TCSystem, userInputs);
   }
 
   /**
    * @brief Load the parameters from a JSON object
    * @param j JSON object containing the parameters
    */
+  template <int dim = 2>
   void
-  from_json(const nlohmann::json &j)
+  from_json(const nlohmann::json &j, const userInputParameters<dim> *userInputs = nullptr)
   {
     // Parse Dimensions
     length_scale = j.at("dimensions").at("length_scale").get<double>();
@@ -125,23 +130,23 @@ public:
     // Parse phases
     phases.clear();
     phase_names.clear();
-    for (const auto &[phase_name, phase_data] : j.at("phases").items())
+    for (const auto &[phase_name, phase_info] : j.at("phases").items())
       {
         Phase phase;
-        phase.name    = phase_name;
-        phase._mu_int = phase_data.at("mu_int").get<double>();
-        phase._sigma  = phase_data.at("sigma").get<double>();
-        phase._f_min  = phase_data.at("f_min").get<double>();
-        phase._D      = phase_data.at("D").get<double>();
+        phase.name = phase_name;
+        phase_info.at("mu_int").get_to(phase._mu_int);
+        phase_info.at("sigma").get_to(phase._sigma);
+        phase_info.at("f_min").get_to(phase._f_min);
+        phase_info.at("D").get_to(phase._D);
 
         // Parse components
         for (const std::string &comp_name : comp_names)
           {
             PhaseCompInfo phaseCompInfo;
-            phaseCompInfo.name    = comp_name;
-            phaseCompInfo.c_min   = phase_data.at(comp_name).at("c_min").get<double>();
-            phaseCompInfo._k_well = phase_data.at(comp_name).at("k_well").get<double>();
-            phaseCompInfo.x0      = phase_data.at(comp_name).at("x0").get<double>();
+            phaseCompInfo.name = comp_name;
+            phase_info.at(comp_name).at("c_min").get_to(phaseCompInfo.c_min);
+            phase_info.at(comp_name).at("k_well").get_to(phaseCompInfo._k_well);
+            phase_info.at(comp_name).at("x0").get_to(phaseCompInfo.x0);
             phase.comps.push_back(phaseCompInfo);
           }
         phases.push_back(phase);
@@ -157,6 +162,9 @@ public:
         order_params.push_back(phase_index);
       }
 
+    // Automatically determine scales if set to zero
+    auto_select_scales(userInputs);
+
     // Convert to volumetric energy if necessary
     if (volumetrize)
       {
@@ -171,6 +179,123 @@ public:
       }
     // Non-dimensionalize
     nondimensionalize();
+  }
+
+  /**
+   * @brief Automatically select scales if they are set to zero
+   */
+  template <int dim = 2>
+  void
+  auto_select_scales(const userInputParameters<dim> *userInputs)
+  {
+    if (userInputs == nullptr)
+      {
+        return;
+      }
+    // If l_int is zero, guess it based on thermodynamics
+    // ========================================================================
+    // if (_l_int == 0.0)
+    //   {
+    //     _l_int = phases[0]._f_min;
+    //   }
+    // ========================================================================
+
+    // If length_scale is zero, set it based on the interface width and domain
+    // discretization
+    // ========================================================================
+    double           min_dx              = std::numeric_limits<double>::max();
+    constexpr double points_in_interface = 6.0;
+    for (unsigned int i = 0; i < dim; i++)
+      {
+        min_dx =
+          std::min(min_dx,
+                   double(userInputs->subdivisions[i]) * userInputs->domain_size[i] /
+                     std::pow(2.0, userInputs->refine_factor));
+      }
+    if (length_scale == 0.0)
+      {
+        length_scale = _l_int / (min_dx * points_in_interface);
+        std::cout << "Setting length scale to " << length_scale
+                  << " based on the interface width and domain discretization.\n";
+      }
+    // ========================================================================
+
+    constexpr double time_scale_factor               = 0.5; // Design factor for stability
+    constexpr double theoretical_max_gradient_factor = 0.25;
+    double           max_gradient_factor             = 0.0;
+    std::string      stability_limiter               = "diffusion";
+    std::string      limiting_phase;
+    const double     gradient_prefactor = userInputs->dtValue *
+                                      (userInputs->degree * userInputs->degree) /
+                                      (min_dx * min_dx * length_scale * length_scale);
+    for (const auto &phase : phases)
+      {
+        const double diffusion_gradient_factor = phase._D * gradient_prefactor;
+        // mu*sigma = L*kappa
+        const double order_parameter_gradient_factor =
+          (phase._mu_int * phase._sigma) * gradient_prefactor;
+
+        if (diffusion_gradient_factor > max_gradient_factor)
+          {
+            max_gradient_factor = diffusion_gradient_factor;
+            stability_limiter   = "diffusion";
+            limiting_phase      = phase.name;
+          }
+        if (order_parameter_gradient_factor > max_gradient_factor)
+          {
+            max_gradient_factor = order_parameter_gradient_factor;
+            stability_limiter   = "order parameter evolution";
+            limiting_phase      = phase.name;
+          }
+      }
+    // If time_scale is zero, set it based on the stability limit
+    // ========================================================================
+    const double reccommended_time_scale =
+      time_scale_factor * theoretical_max_gradient_factor / max_gradient_factor;
+    if (time_scale == 0.0)
+      {
+        time_scale = reccommended_time_scale;
+        std::cout << "\nSetting time scale to " << time_scale
+                  << " based on the stability limit using a design factor of "
+                  << time_scale_factor << ".\n"
+                  << "The numerical stability for this set of parameters is limited by "
+                  << stability_limiter << " in phase " << limiting_phase << ".\n";
+      }
+    else
+      {
+        // If time_scale is not zero, ensure it is not larger than the stability limit
+        if (time_scale > reccommended_time_scale)
+          {
+            std::cout << "\nWarning: Provided time scale is larger than the stability "
+                         "limit using a design factor of "
+                      << time_scale_factor
+                      << ".\n"
+                         "We recommend using a time scale of "
+                      << reccommended_time_scale << " or a time step of "
+                      << userInputs->dtValue * reccommended_time_scale / time_scale
+                      << " to ensure stability.\n\n";
+          }
+      }
+    // ========================================================================
+
+    // If energy_scale is zero, set it to the lowest free energy curvature
+    // ========================================================================
+    if (energy_scale == 0.0)
+      {
+        double minimum_diagonal_curvature = std::numeric_limits<double>::max();
+        for (const auto &phase : phases)
+          {
+            for (const auto &comp : phase.comps)
+              {
+                minimum_diagonal_curvature =
+                  std::min(minimum_diagonal_curvature, comp._k_well);
+              }
+          }
+        energy_scale = minimum_diagonal_curvature;
+        std::cout << "Setting energy scale to " << energy_scale
+                  << " based on the lowest free energy curvature diagonal.\n";
+      }
+    // ========================================================================
   }
 
   /**
