@@ -108,7 +108,7 @@ private:
   [[nodiscard]] double
   interface(double x) const
   {
-    return 0.5 * (2.0 + std::tanh(2.0 * x / isoSys.l_int));
+    return 0.5 * (1.0 + std::tanh(2.0 * x / isoSys.l_int));
   }
 
   /**
