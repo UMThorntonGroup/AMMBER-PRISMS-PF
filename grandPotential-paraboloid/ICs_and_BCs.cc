@@ -9,9 +9,6 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
                                             [[maybe_unused]] double            &scalar_IC,
                                             [[maybe_unused]] Vector<double>    &vector_IC)
 {
-  // ---------------------------------------------------------------------
-  // ENTER THE INITIAL CONDITIONS HERE
-  // ---------------------------------------------------------------------
   std::map<uint, uint>        op_index;
   std::map<std::string, uint> comp_index;
   uint                        var_index = 0;
@@ -25,6 +22,9 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
       op_index[eta_index++] = var_index++;
     }
 
+  // ---------------------------------------------------------------------
+  // TODO: ENTER THE INITIAL CONDITIONS HERE >
+  // ---------------------------------------------------------------------
   // Custom coordinate system
   double center[3] = {0.5 * userInputs.domain_size[0],
                       0.5 * userInputs.domain_size[1],
@@ -43,6 +43,9 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);
   eta0[0] = 1.0 - circular;
   eta0[1] = circular;
+  // ---------------------------------------------------------------------
+  //  < ENTER THE INITIAL CONDITIONS HERE
+  // ---------------------------------------------------------------------
 
   // Submit the fields
   var_index = 0;
@@ -94,6 +97,7 @@ customPDE<dim, degree>::setNonUniformDirichletBCs(
   // --------------------------------------------------------------------------
   // ENTER THE NON-UNIFORM DIRICHLET BOUNDARY CONDITIONS HERE
   // --------------------------------------------------------------------------
-
+  // Use the initial condition function to set the boundary conditions
+  this->setInitialCondition(p, index, scalar_BC, vector_BC);
   // --------------------------------------------------------------------------
 }
