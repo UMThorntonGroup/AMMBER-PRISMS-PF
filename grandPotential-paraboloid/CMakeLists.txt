@@ -32,3 +32,8 @@ if(${PRISMS_PF_BUILD_RELEASE} STREQUAL "ON")
   deal_ii_setup_target(main_release RELEASE)
   target_link_libraries(main_release ${CMAKE_SOURCE_DIR}/../phaseField/libprisms-pf-release.a)
 endif()
+
+add_executable(generate_bc_amr
+  ${CMAKE_SOURCE_DIR}/generate_bc_amr.cc)
+  set_property(TARGET generate_bc_amr PROPERTY OUTPUT_NAME generate-bc-amr)
+  deal_ii_setup_target(generate_bc_amr RELEASE)

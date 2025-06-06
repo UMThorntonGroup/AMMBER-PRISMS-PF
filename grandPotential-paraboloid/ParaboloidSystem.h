@@ -377,6 +377,40 @@ public:
   }
 
   /**
+   * @brief Get names of order parameters
+   * @return A vector of order parameter names
+   */
+  std::vector<std::string>
+  get_order_parameter_names() const
+  {
+    std::vector<std::string> op_names;
+    std::map<uint, uint>     phase_counter;
+    for (const auto &phase_index : order_params)
+      {
+        if (phase_counter.find(phase_index) == phase_counter.end())
+          {
+            phase_counter[phase_index] = 0;
+          }
+        std::string phase_name = phase_names[phase_index];
+        std::string var_name =
+          phase_name + "_" + std::to_string(phase_counter[phase_index]);
+        op_names.push_back(var_name);
+        phase_counter[phase_index]++;
+      }
+    return op_names;
+  }
+
+  /**
+   * @brief Get names of components
+   * @return A vector of component names
+   */
+  const std::vector<std::string> &
+  get_component_names() const
+  {
+    return comp_names;
+  }
+
+  /**
    * @brief Declare the fields needed for the PDE in PRISMS-PF
    * @param loader Pointer to the attribute loader (equations.cc)
    */
@@ -397,22 +431,12 @@ public:
     std::cout << "\n"
               << "Order parameter names: ";
     // Get names for order parameter fields
-    std::vector<std::string> op_names;
+    std::vector<std::string> op_names = get_order_parameter_names();
     std::vector<std::string> grad_op_names;
-    std::map<uint, uint>     phase_counter;
-    for (const auto &phase_index : order_params)
+    for (const auto &op_name : op_names)
       {
-        if (phase_counter.find(phase_index) == phase_counter.end())
-          {
-            phase_counter[phase_index] = 0;
-          }
-        std::string phase_name = phase_names[phase_index];
-        std::string var_name =
-          phase_name + "_" + std::to_string(phase_counter[phase_index]);
-        op_names.push_back(var_name);
-        grad_op_names.push_back("grad(" + var_name + ")");
-        phase_counter[phase_index]++;
-        std::cout << var_name << " ";
+        grad_op_names.push_back("grad(" + op_name + ")");
+        std::cout << op_name << " ";
       }
     std::cout << "\n";
 
@@ -464,21 +488,7 @@ public:
         mu_names.push_back("mu_" + comp_name);
       }
     // Get names for order parameter fields
-    std::vector<std::string> op_names;
-    std::map<uint, uint>     phase_counter;
-    for (const auto &phase_index : order_params)
-      {
-        if (phase_counter.find(phase_index) == phase_counter.end())
-          {
-            phase_counter[phase_index] = 0;
-          }
-        std::string phase_name = phase_names[phase_index];
-        std::string var_name =
-          phase_name + "_" + std::to_string(phase_counter[phase_index]);
-        op_names.push_back(var_name);
-        phase_counter[phase_index]++;
-      }
-    std::cout << "\n";
+    std::vector<std::string> op_names = get_order_parameter_names();
 
     // Assign fields
     for (const auto &c_name : c_names)
