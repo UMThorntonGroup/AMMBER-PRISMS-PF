@@ -135,7 +135,7 @@ private:
         for (uint comp_index = 0; comp_index < isoSys.comp_names.size(); comp_index++)
           {
             const ParaboloidSystem::PhaseCompInfo &comp_info = phase.comps.at(comp_index);
-            double mu0 = isoSys.Vm * comp_info.k_well * (comp_info.x0 - comp_info.c_min);
+            double mu0 = comp_info.k_well * (comp_info.x0 - comp_info.c_min);
             sys_for_print.comp_data[comp_index].mu.val = constV(mu0);
           }
         sys_for_print.calculate_omega_phase();
