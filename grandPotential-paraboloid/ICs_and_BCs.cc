@@ -37,12 +37,15 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
 
   // TODO: Make relevant geometries
   [[maybe_unused]] double circular = interface(0.5 * (r0 * r0 - r2) / r0);
-  [[maybe_unused]] double flat     = interface(0.5 * (r0 * r0 - y * y) / r0);
+  [[maybe_unused]] double flat     = interface(p[1] - r0);
 
   // TODO: Populate eta0 with the initial condition for the order parameters
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);
-  eta0[0] = 1.0 - circular;
-  eta0[1] = circular;
+  eta0[0] = flat;
+  eta0[1] = (1.0 - flat) * ((1.0 / 4.0) + 0.1 * dist(rng));
+  eta0[2] = (1.0 - flat) * ((1.0 / 4.0) + 0.1 * dist(rng));
+  eta0[3] = (1.0 - flat) * ((1.0 / 4.0) + 0.1 * dist(rng));
+  eta0[4] = (1.0 - flat) * ((1.0 / 4.0) + 0.1 * dist(rng));
   // ---------------------------------------------------------------------
   //  < ENTER THE INITIAL CONDITIONS HERE
   // ---------------------------------------------------------------------
