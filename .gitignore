@@ -55,6 +55,7 @@ error.txt
 *.pbs
 main-debug
 main
+generate-bc-amr
 
 #Output files
 applications/*/*.vtk
