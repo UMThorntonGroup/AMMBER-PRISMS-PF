@@ -170,8 +170,7 @@ public:
             const ParaboloidSystem::PhaseCompInfo &comp_info =
               phase_info.comps.at(comp_index);
             phase.omega +=
-              -comp.mu * comp.mu / (2.0 * isoSys->Vm * isoSys->Vm * comp_info.k_well) -
-              comp.mu * comp_info.c_min / isoSys->Vm;
+              -comp.mu * comp.mu / (2.0 * comp_info.k_well) - comp.mu * comp_info.c_min;
           }
       }
   }
@@ -276,8 +275,7 @@ public:
           {
             PhaseData &phase = phase_data[phase_index];
             comp.M += isoSys->phases.at(phase_index).D * phase.h.val /
-                      (isoSys->Vm * isoSys->Vm *
-                       isoSys->phases.at(phase_index).comps.at(comp_index).k_well);
+                      (isoSys->phases.at(phase_index).comps.at(comp_index).k_well);
           }
       }
   }
@@ -301,7 +299,7 @@ public:
             PhaseData                             &phase = phase_data[phase_index];
             const ParaboloidSystem::PhaseCompInfo &comp_info =
               isoSys->phases.at(phase_index).comps.at(comp_index);
-            chi_AA += phase.h / comp_info.k_well / isoSys->Vm / isoSys->Vm;
+            chi_AA += phase.h / comp_info.k_well;
           }
 
         // Flux term
@@ -311,16 +309,14 @@ public:
         // Partitioning term
         for (auto &[phase_index, op] : op_data)
           {
-            scalarField drhodeta_sum;
+            scalarField dcdeta_sum;
             for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
               {
                 auto &comp_info = isoSys->phases.at(beta_index).comps.at(comp_index);
-                drhodeta_sum +=
-                  op.dhdeta.at(beta_index) *
-                  (comp.mu / isoSys->Vm / comp_info.k_well + comp_info.c_min);
+                dcdeta_sum += op.dhdeta.at(beta_index) *
+                              (comp.mu / comp_info.k_well + comp_info.c_min);
               }
-            drhodeta_sum /= isoSys->Vm;
-            comp.dmudt -= drhodeta_sum * op.detadt;
+            comp.dmudt -= dcdeta_sum * op.detadt;
           }
 
         // Convert from dcdt to dmudt
@@ -393,7 +389,7 @@ public:
             const ParaboloidSystem::PhaseCompInfo &comp_info =
               isoSys->phases.at(phase_index).comps.at(comp_index);
             c += phase.h.val * comp_info.c_min;
-            c += phase.h.val * comp.mu.val / comp_info.k_well / isoSys->Vm;
+            c += phase.h.val * comp.mu.val / comp_info.k_well;
           }
         pp_variable_list.set_scalar_value_term_RHS(pp_index, c);
         pp_index++;
