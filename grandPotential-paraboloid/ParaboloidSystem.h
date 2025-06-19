@@ -155,7 +155,7 @@ public:
 
     // Parse order parameters
     order_params.clear();
-    for (const auto &phase_name : j.at("order_parameters"))
+    for (const std::string phase_name : j.at("order_parameters"))
       {
         uint phase_index = std::find(phase_names.begin(), phase_names.end(), phase_name) -
                            phase_names.begin();
