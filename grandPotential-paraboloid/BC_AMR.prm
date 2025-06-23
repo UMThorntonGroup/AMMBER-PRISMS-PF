@@ -3,6 +3,8 @@
 
 set Boundary condition for variable LIQUID_0 = NATURAL
 set Boundary condition for variable SOLID_0 = NATURAL
+set Boundary condition for variable LIQUID_0_detadt = NATURAL
+set Boundary condition for variable SOLID_0_detadt = NATURAL
 set Boundary condition for variable mu_CU = NATURAL
 set Boundary condition for variable mu_TI = NATURAL
 
