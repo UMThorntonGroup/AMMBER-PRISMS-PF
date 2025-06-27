@@ -423,7 +423,7 @@ public:
         variable_list.set_scalar_value_term_RHS(var_index,
                                                 op.eta.val +
                                                   op.detadt_field * userInputs->dtValue);
-        variable_list.set_scalar_gradient_term_RHS(var_index, -op.detadt.vec * 0.0);
+        variable_list.set_scalar_gradient_term_RHS(var_index, scalarGrad());
         var_index++;
       }
   }
@@ -438,14 +438,8 @@ public:
     variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
     uint                                                            &var_index)
   {
-    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
-      {
-        var_index++;
-      }
-    for (auto &[phase_index, op] : op_data)
-      {
-        var_index++;
-      }
+    var_index += isoSys->num_comps;           // Skip the mu fields
+    var_index += isoSys->order_params.size(); // Skip the op fields
     for (auto &[phase_index, op] : op_data)
       {
         variable_list.set_scalar_value_term_RHS(var_index, op.detadt.val);
