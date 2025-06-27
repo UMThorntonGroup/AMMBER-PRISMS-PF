@@ -151,13 +151,10 @@ main(int argc, char *argv[])
         {
           std::string comp_name     = system.comp_names[comp_index];
           double      lowest_A_diag = std::numeric_limits<double>::max();
-          std::cout << system.phases.size();
           for (const auto &phase : system.phases)
             {
               lowest_A_diag =
                 std::min(lowest_A_diag, phase.A_well(comp_index, comp_index));
-              std::cout << phase.name << " " << phase.A_well(comp_index, comp_index)
-                        << " ";
             }
           double      grad_mu_lb = gradient_lower * lowest_A_diag;
           std::string var_name   = "mu_" + comp_name;
