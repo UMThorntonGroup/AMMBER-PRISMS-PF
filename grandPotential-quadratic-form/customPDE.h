@@ -128,6 +128,7 @@ private:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
+            constV(0.), // detadt_field
             {}                // dhdeta
           }
         });
