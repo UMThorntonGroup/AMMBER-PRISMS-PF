@@ -123,6 +123,11 @@ main(int argc, char *argv[])
       prmFile << "set Boundary condition for variable " << op_name << " = " << condition
               << "\n";
     }
+  for (const std::string &op_name : system.get_order_parameter_names())
+    {
+      prmFile << "set Boundary condition for variable " << op_name + "_detadt"
+              << " = " << condition << "\n";
+    }
   for (const std::string &comp_name : system.get_component_names())
     {
       std::string var_name = "mu_" + comp_name;
