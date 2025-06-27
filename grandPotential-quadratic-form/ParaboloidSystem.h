@@ -507,12 +507,10 @@ public:
     std::vector<std::string> op_names = get_order_parameter_names();
     std::vector<std::string> grad_op_names;
     std::vector<std::string> op_detadt_names;
-    std::vector<std::string> grad_op_detadt_names;
     for (const auto &op_name : op_names)
       {
         grad_op_names.push_back("grad(" + op_name + ")");
         op_detadt_names.push_back(op_name + "_detadt");
-        grad_op_detadt_names.push_back("grad(" + op_detadt_names.back() + ")");
         std::cout << op_name << " ";
       }
     std::cout << "\n";
@@ -542,7 +540,6 @@ public:
         loader->insert_dependencies_value_term_RHS(var_index, op_names);
         loader->insert_dependencies_value_term_RHS(var_index, grad_op_names);
         loader->insert_dependencies_value_term_RHS(var_index, op_detadt_names);
-        loader->insert_dependencies_value_term_RHS(var_index, grad_op_detadt_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, op_names);
@@ -560,7 +557,6 @@ public:
         loader->insert_dependencies_value_term_RHS(var_index, op_names);
         loader->insert_dependencies_value_term_RHS(var_index, grad_op_names);
         loader->insert_dependencies_value_term_RHS(var_index, op_detadt_names);
-        loader->insert_dependencies_value_term_RHS(var_index, grad_op_detadt_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, mu_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, grad_mu_names);
         loader->insert_dependencies_gradient_term_RHS(var_index, op_names);
