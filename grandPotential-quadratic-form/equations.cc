@@ -101,7 +101,16 @@ customPDE<dim, degree>::nonExplicitEquationRHS(
   [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>> &variable_list,
   [[maybe_unused]] const Point<dim, VectorizedArray<double>>                q_point_loc,
   [[maybe_unused]] const VectorizedArray<double> element_volume) const
-{}
+{
+  SystemContainer<dim, degree> sys(isoSys, userInputs);
+  uint                         var_index = 0;
+  sys.initialize_fields_explicit(variable_list, var_index);
+  sys.calculate_locals();
+  sys.calculate_detadt();
+  sys.calculate_dmudt();
+  var_index = 0;
+  sys.submit_aux_fields(variable_list, var_index);
+}
 
 // =============================================================================================
 // equationLHS (needed only if at least one equation is time independent)
