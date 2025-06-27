@@ -26,14 +26,14 @@ set Mesh adaptivity = true
 set Max refinement level = 9
 set Min refinement level = 4
 
-set Steps between remeshing operations = 25
+set Steps between remeshing operations = 500
 
 # =================================================================================
 # Set the time step parameters
 # =================================================================================
 set Time step = 1.0e-3
 
-set Number of time steps = 10000
+set Number of time steps = 100000
 
 # =================================================================================
 # Set the output parameters
@@ -42,7 +42,7 @@ set Output condition = EQUAL_SPACING
 
 set Number of outputs = 100
 
-set Skip print steps = 50
+set Skip print steps = 500
 
 # =================================================================================
 # Set the boundary conditions
@@ -67,7 +67,8 @@ set Number of checkpoints = 0
 # =================================================================================
 
 # Particle radius
-set Model constant r0 = 32.0, DOUBLE
+set Model constant r0 = 24.0, DOUBLE
+set Model constant r_seed = 4.0, DOUBLE
 
 # Design factor (1/safety factor) for reccommending timestep.
 # A value in (0, 1), practically in [0.1, 0.8]

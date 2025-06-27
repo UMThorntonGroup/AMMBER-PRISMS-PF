@@ -205,6 +205,7 @@ private:
    */
   std::map<std::string, double> initial_omega;
 
-  double r0 = userInputs.get_model_constant_double("r0");
+  double r0     = userInputs.get_model_constant_double("r0");
+  double r_seed = userInputs.get_model_constant_double("r_seed");
   // ================================================================
 };
