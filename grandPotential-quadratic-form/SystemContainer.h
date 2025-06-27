@@ -69,6 +69,7 @@ public:
   {
     scalarField              eta;
     scalarVariation          detadt;
+    scalarValue              detadt_field = dealii::make_vectorized_array(0.);
     std::vector<scalarField> dhdeta;
   };
 
@@ -137,6 +138,8 @@ public:
         OPData op;
         op.eta.val  = variable_list.get_scalar_value(var_index);
         op.eta.grad = variable_list.get_scalar_gradient(var_index);
+        op.detadt_field =
+          variable_list.get_scalar_value(var_index + isoSys->order_params.size());
         op.dhdeta.resize(isoSys->phases.size());
         op_data.push_back({phase_index, op});
         var_index++;
@@ -372,7 +375,7 @@ public:
         // dmudt -= op.detadt * dcdeta_sum; // NOTATION
         for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
           {
-            dmudt[comp_index] -= op.detadt * dcdeta_sum[comp_index];
+            dmudt[comp_index] -= op.detadt_field * dcdeta_sum[comp_index].val;
           }
       }
     // Convert from dcdt to dmudt
@@ -419,9 +422,34 @@ public:
       {
         variable_list.set_scalar_value_term_RHS(var_index,
                                                 op.eta.val +
-                                                  op.detadt.val * userInputs->dtValue);
-        variable_list.set_scalar_gradient_term_RHS(var_index,
-                                                   -op.detadt.vec * userInputs->dtValue);
+                                                  op.detadt_field * userInputs->dtValue);
+        variable_list.set_scalar_gradient_term_RHS(var_index, -op.detadt.vec * 0.0);
+        var_index++;
+      }
+  }
+
+  /**
+   * @brief Submit the fields to PRISMS-PF
+   * @param variable_list The PRISMS-PF variable list
+   * @param var_index The starting index for the block of fields
+   */
+  void
+  submit_aux_fields(
+    variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
+    uint                                                            &var_index)
+  {
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
+      {
+        var_index++;
+      }
+    for (auto &[phase_index, op] : op_data)
+      {
+        var_index++;
+      }
+    for (auto &[phase_index, op] : op_data)
+      {
+        variable_list.set_scalar_value_term_RHS(var_index, op.detadt.val);
+        variable_list.set_scalar_gradient_term_RHS(var_index, -op.detadt.vec);
         var_index++;
       }
   }
