@@ -130,6 +130,35 @@ public:
   }
 
   /**
+   * @brief Initialize the fields for the PDE
+   * @param variable_list The variable list
+   * @param var_index The starting index for the block of fields
+   */
+  void
+  initialize_fields_nonexplicit(
+    const variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
+    uint                                                                  &var_index)
+  {
+    op_data.clear();
+    op_data.reserve(isoSys->order_params.size());
+    for (uint comp_index = 0; comp_index < isoSys->comp_names.size(); comp_index++)
+      {
+        comp_data[comp_index].mu.val  = variable_list.get_scalar_value(var_index);
+        comp_data[comp_index].mu.grad = variable_list.get_scalar_gradient(var_index);
+        var_index++;
+      }
+    for (const auto &phase_index : isoSys->order_params)
+      {
+        OPData op;
+        op.eta.val  = variable_list.get_scalar_value(var_index);
+        op.eta.grad = variable_list.get_scalar_gradient(var_index);
+        op.dhdeta.resize(isoSys->phases.size());
+        op_data.push_back({phase_index, op});
+        var_index++;
+      }
+  }
+
+  /**
    * @brief Initialize the fields needed for the postprocess
    * @param variable_list The variable list
    * @param var_index The starting index for the block of fields
