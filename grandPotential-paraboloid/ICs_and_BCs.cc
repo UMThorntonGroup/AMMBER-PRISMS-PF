@@ -1,6 +1,19 @@
 // ===========================================================================
 // FUNCTION FOR INITIAL CONDITIONS
 // ===========================================================================
+template <int dim>
+double
+circle_level(const std::array<double, dim> &center,
+             const double                  &radius,
+             const std::array<double, dim> &p)
+{
+  double r2 = 0.0;
+  for (unsigned int d = 0; d < dim; ++d)
+    {
+      r2 += (p[d] - center[d]) * (p[d] - center[d]);
+    }
+  return (radius * radius - r2) / (2.0 * radius);
+}
 
 template <int dim, int degree>
 void
@@ -36,17 +49,28 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   (void) r2;
 
   // TODO: Make relevant geometries
-  [[maybe_unused]] double circular = interface(0.5 * (r0 * r0 - r2) / r0);
-  [[maybe_unused]] double flat     = interface(x);
-  [[maybe_unused]] double seed =
-    interface(0.5 * (r_seed * r_seed - (x * x + (y - r0) * (y - r0))) / r_seed);
+  [[maybe_unused]] double pocket =
+    interface(circle_level<2>(
+      {
+        {+pocket_d, 0.0}
+  },
+      pocket_r,
+      {{x, y}})) *
+    interface(circle_level<2>({{-pocket_d, 0}}, pocket_r, {{x, y}}));
+  [[maybe_unused]] double flat = interface(x);
+  [[maybe_unused]] double seed = interface(circle_level<2>(
+    {
+      {0.0, 0.5 * pocket_h}
+  },
+    r_seed,
+    {{x, y}}));
 
   // TODO: Populate eta0 with the initial condition for the order parameters
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);
-  eta0[0] = flat * (1.0 - circular);
-  eta0[1] = (1.0 - flat) * (1.0 - circular);
-  eta0[3] = circular * seed;
-  eta0[2] = circular * (1.0 - eta0[3]);
+  eta0[0] = flat * (1.0 - pocket);         // phase_a
+  eta0[1] = (1.0 - flat) * (1.0 - pocket); // phase_b
+  eta0[3] = seed * pocket;                 // phase_c seed
+  eta0[2] = pocket * (1.0 - seed);         // liquid
   // ---------------------------------------------------------------------
   //  < ENTER THE INITIAL CONDITIONS HERE
   // ---------------------------------------------------------------------

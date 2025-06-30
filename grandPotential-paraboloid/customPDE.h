@@ -205,7 +205,11 @@ private:
    */
   std::map<std::string, double> initial_omega;
 
-  double r0     = userInputs.get_model_constant_double("r0");
-  double r_seed = userInputs.get_model_constant_double("r_seed");
+  double r0       = userInputs.get_model_constant_double("r0");
+  double r_seed   = userInputs.get_model_constant_double("r_seed");
+  double pocket_w = userInputs.get_model_constant_double("pocket_width");
+  double pocket_h = userInputs.get_model_constant_double("pocket_height");
+  double pocket_d = (pocket_w * pocket_w - pocket_h * pocket_h) / (-4. * pocket_w);
+  double pocket_r = (pocket_w / 2.0) + pocket_d;
   // ================================================================
 };
