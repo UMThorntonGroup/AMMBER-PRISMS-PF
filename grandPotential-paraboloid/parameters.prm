@@ -70,6 +70,9 @@ set Number of checkpoints = 0
 set Model constant r0 = 24.0, DOUBLE
 set Model constant r_seed = 4.0, DOUBLE
 
+set Model constant pocket_width = 10.0, DOUBLE
+set Model constant pocket_height = 60.0, DOUBLE
+
 # =================================================================================
 # Set the automatic parameter selection constants
 # =================================================================================
