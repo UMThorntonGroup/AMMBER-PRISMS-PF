@@ -223,8 +223,9 @@ public:
     // If length_scale is zero, set it based on the interface width and domain
     // discretization
     // ========================================================================
-    double           min_dx              = std::numeric_limits<double>::max();
-    constexpr double points_in_interface = 6.0;
+    double min_dx = std::numeric_limits<double>::max();
+    double points_in_interface =
+      userInputs->get_model_constant_double("num_points_in_interface");
     for (unsigned int i = 0; i < dim; i++)
       {
         min_dx =
@@ -236,11 +237,13 @@ public:
       {
         length_scale = _l_int / (min_dx * points_in_interface);
         std::cout << "Setting length scale to " << length_scale
-                  << " based on the interface width and domain discretization.\n";
+                  << " based on the interface width and domain discretization using "
+                  << points_in_interface << " points in the interface.\n";
       }
     // ========================================================================
 
-    constexpr double time_scale_factor               = 0.5; // Design factor for stability
+    const double time_scale_factor = userInputs->get_model_constant_double(
+      "time_scale_stability_factor"); // Design factor for stability
     constexpr double theoretical_max_gradient_factor = 0.25;
     double           max_gradient_factor             = 0.0;
     std::string      stability_limiter               = "diffusion";
@@ -272,14 +275,14 @@ public:
     // ========================================================================
     const double reccommended_time_scale =
       time_scale_factor * theoretical_max_gradient_factor / max_gradient_factor;
+    std::cout << "The numerical stability for this set of parameters is limited by "
+              << stability_limiter << " in phase " << limiting_phase << ".\n";
     if (time_scale == 0.0)
       {
         time_scale = reccommended_time_scale;
         std::cout << "\nSetting time scale to " << time_scale
                   << " based on the stability limit using a design factor of "
-                  << time_scale_factor << ".\n"
-                  << "The numerical stability for this set of parameters is limited by "
-                  << stability_limiter << " in phase " << limiting_phase << ".\n";
+                  << time_scale_factor << ".\n";
       }
     else
       {

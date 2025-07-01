@@ -192,10 +192,7 @@ private:
    * @brief Object containing the thermodynamic and kinetic parameters
    */
   ParaboloidSystem isoSys;
-  /**
-   * @brief Fraction of the theoretical maximum time step to use
-   */
-  double timestep_alpha = userInputs.get_model_constant_double("timestep_alpha");
+
   /**
    * @brief Map of the initial grand potential densities for each phase (used for
    * printing)

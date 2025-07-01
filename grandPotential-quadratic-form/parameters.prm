@@ -69,7 +69,15 @@ set Number of checkpoints = 0
 # Particle radius
 set Model constant r0 = 32.0, DOUBLE
 
+# =================================================================================
+# Set the automatic parameter selection constants
+# =================================================================================
+
 # Design factor (1/safety factor) for reccommending timestep.
 # A value in (0, 1), practically in [0.1, 0.8]
-# Using a value of 1, a timestep at the stability limit will be reccommend
-set Model constant timestep_alpha = 0.8, DOUBLE
+# lower value -> more stable
+set Model constant time_scale_stability_factor = 0.5, DOUBLE
+
+# Number of points in interface when automatically selecting length scale
+# n > 4 reccommended
+set Model constant num_points_in_interface = 6.0, DOUBLE
