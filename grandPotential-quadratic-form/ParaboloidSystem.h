@@ -188,9 +188,6 @@ public:
         order_params.push_back(phase_index);
       }
 
-    // Automatically determine scales if set to zero
-    auto_select_scales(userInputs);
-
     // Convert to volumetric energy if necessary
     if (volumetrize)
       {
@@ -201,6 +198,10 @@ public:
             phase._D_well /= _Vm;
           }
       }
+
+    // Automatically determine scales if set to zero
+    auto_select_scales(userInputs);
+
     // Non-dimensionalize
     nondimensionalize();
   }
