@@ -33,8 +33,8 @@ for obj in objects:
     GFE2MoO43_disc = bi.BinaryIsothermalDiscretePhase("GFE2MoO43", x, obj["GFE2MoO43"](x))
     Gliquid_disc = bi.BinaryIsothermalDiscretePhase("Gliquid", x, obj["Gliquid"](x))
 
-    plt.plot(x, obj["GFE2O3"](x), label=f"GFE2O3 at {obj['Temperature']} K")
-    plt.savefig(f"{obj['Temperature']}.png")
+    # plt.plot(x, obj["GFE2O3"](x), label=f"GFE2O3 at {obj['Temperature']} K")
+    # plt.savefig(f"{obj['Temperature']}.png")
 
     Gliquid_resample = Gliquid_disc.resample(np.linspace(0.2, 0.3, 100))
 
@@ -50,7 +50,7 @@ for obj in objects:
     # alternatively
     liq_fit = bi.BinaryIsothermal2ndOrderPhase("Gliquid")
     liq_fit.fit_phase(Gliquid_resample.xdata, Gliquid_resample.Gdata, kwellmax=1.0e11)
-    big_k = 2.0e10
+    big_k = 5000000.0
     phases = {
         "GFE2O3": bi.BinaryIsothermal2ndOrderPhase("GFE2O3", obj["GFE2O3"](1.0), big_k, 1.0 ),
         "GMoO3": bi.BinaryIsothermal2ndOrderPhase("GMoO3", obj["GMoO3"](0.0), big_k, 0.0 ),

@@ -68,10 +68,10 @@ set Number of checkpoints = 0
 
 # Particle radius
 set Model constant r0 = 24.0, DOUBLE
-set Model constant r_seed = 4.0, DOUBLE
+set Model constant r_seed = 6.0, DOUBLE
 
-set Model constant pocket_width = 10.0, DOUBLE
-set Model constant pocket_height = 60.0, DOUBLE
+set Model constant pocket_width = 24.0, DOUBLE
+set Model constant pocket_height = 64.0, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants
@@ -81,6 +81,7 @@ set Model constant pocket_height = 60.0, DOUBLE
 # A value in (0, 1), practically in [0.1, 0.8]
 # lower value -> more stable
 set Model constant time_scale_stability_factor = 0.5, DOUBLE
+#0.0000015, DOUBLE
 
 # Number of points in interface when automatically selecting length scale
 # n > 4 reccommended

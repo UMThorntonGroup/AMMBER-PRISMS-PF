@@ -1,69 +1,66 @@
 {
-    "dimensions": {
-        "length_scale": 0.0,
-        "time_scale": 0.0000025,
-        "energy_density_scale": 1.0
-    },
-    "convert_fractional_to_volumetric_energy": false,
-    "solution_component": "AA",
+    "solution_component": "MoO3",
     "components": [
-        "BB"
+        "Fe2O3"
     ],
-    "Vm": 1.0,
-    "l_int": 0.0125,
+    "convert_fractional_to_volumetric_energy": true,
     "phases": {
-        "phase_a": {
-            "mu_int": 1000.0,
-            "D": 0.75,
-            "sigma": 0.1,
-            "f_min": 0.0,
-            "BB": {
-                "k_well": 1000.0,
-                "c_min": 0.0,
-                "x0": 0.0
-            }
-        },
-        "phase_b": {
-            "mu_int": 1000.0,
-            "D": 0.1,
-            "sigma": 0.1,
-            "f_min": 0.0,
-            "BB": {
-                "k_well": 1000.0,
+        "GFE2O3": {
+            "Fe2O3": {
+                "k_well": 5000000.0,
                 "c_min": 1.0,
                 "x0": 1.0
-            }
+            },
+            "f_min": -958269.894158353,
+            "mu_int": 1.0e-9,
+            "D": 3.64e-10,
+            "sigma": 1.0
         },
-        "liquid": {
-            "mu_int": 1000.0,
-            "D": 100.0,
-            "sigma": 0.2,
-            "f_min": -1.25,
-            "BB": {
-                "k_well": 8.0,
-                "c_min": 0.5,
-                "x0": 0.5
-            }
+        "GMoO3": {
+            "Fe2O3": {
+                "k_well": 5000000.0,
+                "c_min": 0.0,
+                "x0": 0.0
+            },
+            "f_min": -852705.700397085,
+            "mu_int": 1.0e-9,
+            "D": 3.64e-10,
+            "sigma": 1.0
         },
-        "phase_c": {
-            "mu_int": 1000.0,
-            "D": 0.1,
-            "sigma": 0.01,
-            "f_min": -2.25,
-            "BB": {
-                "k_well": 1000.0,
-                "c_min": 0.5,
-                "x0": 0.5
-            }
+        "GFE2MoO43": {
+            "Fe2O3": {
+                "k_well": 5000000.0,
+                "c_min": 0.25,
+                "x0": 0.25
+            },
+            "f_min": -916599.800159529,
+            "mu_int": 1.0e-9,
+            "D": 3.64e-10,
+            "sigma": 0.25
+        },
+        "Gliquid": {
+            "Fe2O3": {
+                "k_well": 808277.7345692137,
+                "c_min": 0.37286921350049135,
+                "x0": 0.25
+            },
+            "f_min": -905829.3675827966,
+            "mu_int": 1.0e-9,
+            "D": 1.0e-9,
+            "sigma": 1.0
         }
     },
+    "l_int": 2.0e-10,
+    "Vm": 3.1e-05,
     "order_parameters": [
-        "phase_a",
-        "phase_b",
-        "liquid",
-        "phase_c"
+        "GFE2O3",
+        "GMoO3",
+        "Gliquid",
+        "GFE2MoO43"
     ],
-    "comments": [
-        "none yet"
-    ]
+    "dimensions": {
+        "length_scale": 0.0,
+        "time_scale": 0.0,
+        "energy_density_scale": 0.0
+    }
 }
