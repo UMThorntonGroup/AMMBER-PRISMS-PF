@@ -33,5 +33,5 @@ subsection Refinement criterion: GFE2MoO43_0
 end
 subsection Refinement criterion: mu_Fe2O3
 	set Criterion type = GRADIENT
-	set Gradient magnitude lower bound = 0.01
+	set Gradient magnitude lower bound = 0.001
 end
