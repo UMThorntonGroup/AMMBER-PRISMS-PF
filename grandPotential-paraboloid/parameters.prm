@@ -33,14 +33,14 @@ set Steps between remeshing operations = 500
 # =================================================================================
 set Time step = 1.0e-3
 
-set Number of time steps = 100000
+set Number of time steps = 200000
 
 # =================================================================================
 # Set the output parameters
 # =================================================================================
 set Output condition = EQUAL_SPACING
 
-set Number of outputs = 100
+set Number of outputs = 200
 
 set Skip print steps = 500
 
