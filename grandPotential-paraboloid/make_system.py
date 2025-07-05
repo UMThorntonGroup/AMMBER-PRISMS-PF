@@ -4,7 +4,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load the JSON data
+# Load the original free energy data
 with open("equations_1.json", "r") as f:
     data = json.load(f)
 
@@ -61,8 +61,15 @@ for obj in objects:
     fit_system.component="Fe2O3"
     fit_system.solution_component="MoO3"
 
+    # For some reson, this breaks if put outside the loop
+    # Load a system file with desired kinetics
+    with open("system.json", "r") as f:
+        base_system = json.load(f)
+
     output = {}
-    add_to_dict(fit_system, output, add_templates=True, c0={"GFE2O3": 1.0, "GMoO3": 0.0, "GFE2MoO43": 0.25, "Gliquid": 0.25}, Vm=3.1e-5)
+    output = base_system.copy()
+
+    add_to_dict(fit_system, output, add_templates=False, c0={"GFE2O3": 1.0, "GMoO3": 0.0, "GFE2MoO43": 0.25, "Gliquid": 0.25}, Vm=3.1e-5)
     system_set.append({obj['Temperature']: output})
 
 for system in system_set:
