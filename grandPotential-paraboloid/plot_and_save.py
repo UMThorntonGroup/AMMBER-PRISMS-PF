@@ -35,11 +35,14 @@ AnnotationAtts.axes2D.xAxis.title.visible = 0
 AnnotationAtts.axes2D.yAxis.title.visible = 0
 AnnotationAtts.axes2D.xAxis.title.title = "X-Axis"
 AnnotationAtts.axes2D.yAxis.title.title = "Y-Axis"
+AnnotationAtts.legendInfoFlag = 0
 SetAnnotationAttributes(AnnotationAtts)
 
-#View2DAtts = View2DAttributes()
-#View2DAtts.viewportCoords = (0.2, 0.95, 0.10, 0.95)
-#SetView2D(View2DAtts)
+View2DAtts = View2DAttributes()
+View2DAtts.viewportCoords = (0.05, 0.95, 0.05, 0.90) # (xmin, xmax, ymin, ymax)
+View2DAtts.fullFrameActivationMode = View2DAtts.On  # On, Off, Auto
+SetView2D(View2DAtts)
+ResetView()
 
 #ViewCurveAtts = ViewCurveAttributes()
 #View2DAtts.viewportCoords = (0.2, 0.95, 0.10, 0.95)

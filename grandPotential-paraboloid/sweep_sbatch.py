@@ -20,7 +20,7 @@ for filename in system_list:
     temp = match.group(1)
 
 # Create a base directory for the parameter sweep results
-base_dir = f'{os.environ.get("SCRATCH")}/metathesis_sweep_01'
+base_dir = f'{os.environ.get("SCRATCH")}/metathesis_sweep_02'
 os.makedirs(base_dir, exist_ok=True)
 # Construct the path to the executable (passed to sbatch, main is large, so we don't want thousands of copies)
 os.environ['main_executable'] = os.path.join(os.path.abspath(os.curdir), 'main')
