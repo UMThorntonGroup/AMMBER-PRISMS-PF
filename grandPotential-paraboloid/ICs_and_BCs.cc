@@ -45,6 +45,8 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   double x         = p[0] - center[0];
   double y         = p[1] - center[1];
   double z         = (dim < 3) ? 0.0 : p[2] - center[2];
+  x                = x - 0.25 * userInputs.domain_size[0];
+  y                = y - 0.50 * userInputs.domain_size[1];
   double r2        = x * x + y * y + z * z;
   (void) r2;
 
@@ -60,17 +62,17 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   [[maybe_unused]] double flat = interface(x);
   [[maybe_unused]] double seed = interface(circle_level<2>(
     {
-      {0.0, 0.5 * pocket_h}
+      {0.0, -userInputs.domain_size[1]}
   },
     r_seed,
     {{x, y}}));
 
   // TODO: Populate eta0 with the initial condition for the order parameters
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);
-  eta0[0] = flat * (1.0 - pocket);         // phase_a
-  eta0[1] = (1.0 - flat) * (1.0 - pocket); // phase_b
-  eta0[3] = seed * pocket;                 // phase_c seed
-  eta0[2] = pocket * (1.0 - seed);         // liquid
+  eta0[0] = flat * (1.0 - pocket) * (1.0 - seed);         // phase_a
+  eta0[1] = (1.0 - flat) * (1.0 - pocket) * (1.0 - seed); // phase_b
+  eta0[3] = seed;                                         // phase_c seed
+  eta0[2] = pocket * (1.0 - seed);                        // liquid
   // ---------------------------------------------------------------------
   //  < ENTER THE INITIAL CONDITIONS HERE
   // ---------------------------------------------------------------------

@@ -50,7 +50,7 @@
             "sigma": 1.0
         }
     },
-    "l_int": 2.0e-10,
+    "l_int": 4.0e-10,
     "Vm": 3.1e-05,
     "order_parameters": [
         "GFE2O3",
