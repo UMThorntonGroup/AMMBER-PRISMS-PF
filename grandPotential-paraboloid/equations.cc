@@ -119,10 +119,10 @@ customPDE<dim, degree>::nonExplicitEquationRHS(
     {
       Point<dim, VectorizedArray<double>> seed_loc = {seed_x, seed_y};
       VectorizedArray<double>             r2 = (q_point_loc - seed_loc).norm_square();
-
+      using std::tanh;
       VectorizedArray<double> seed =
 
-        0.5 * (1.0 + std::tanh((r_seed * r_seed - r2) / (r_seed) / isoSys.l_int)) /
+        0.5 * (1.0 + tanh((r_seed * r_seed - r2) / (r_seed) / isoSys.l_int)) /
         userInputs.dtValue;
       sys.op_data[0].second.detadt.val -= seed * sys.op_data[0].second.eta.val;
       sys.op_data[1].second.detadt.val -= seed * sys.op_data[1].second.eta.val;
