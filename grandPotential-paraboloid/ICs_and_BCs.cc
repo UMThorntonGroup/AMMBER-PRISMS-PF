@@ -66,6 +66,7 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   },
     r_seed,
     {{x, y}}));
+  seed                         = 0.0;
 
   // TODO: Populate eta0 with the initial condition for the order parameters
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);

@@ -1,0 +1,4 @@
+*frames*
+system_*.json
+*.session
+*.session.gui

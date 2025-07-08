@@ -2,9 +2,9 @@
 
 #SBATCH -A DMR110007
 #SBATCH -p wholenode
-#SBATCH -N 2
-#SBATCH --ntasks=256
-#SBATCH -t 01:00:00
+#SBATCH -N 4
+#SBATCH --ntasks=512
+#SBATCH -t 04:00:00
 #SBATCH --mail-user=xmen@umich.edu
 #SBATCH --mail-type=FAIL
 

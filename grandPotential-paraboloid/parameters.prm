@@ -68,10 +68,13 @@ set Number of checkpoints = 0
 
 # Particle radius
 set Model constant r0 = 24.0, DOUBLE
-set Model constant r_seed = 1.0, DOUBLE
+set Model constant r_seed = 4.0, DOUBLE
 
 set Model constant pocket_width = 12.0, DOUBLE
 set Model constant pocket_height = 32.0, DOUBLE
+set Model constant seed_time = 500.0, DOUBLE
+set Model constant seed_x = 100.0, DOUBLE
+set Model constant seed_y = 128.0, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants

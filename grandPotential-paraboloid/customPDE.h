@@ -128,7 +128,7 @@ private:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
-            constV(0.), // detadt_field
+            constV(0.),       // detadt_field
             {}                // dhdeta
           }
         });
@@ -202,11 +202,14 @@ private:
    */
   std::map<std::string, double> initial_omega;
 
-  double r0       = userInputs.get_model_constant_double("r0");
-  double r_seed   = userInputs.get_model_constant_double("r_seed");
-  double pocket_w = userInputs.get_model_constant_double("pocket_width");
-  double pocket_h = userInputs.get_model_constant_double("pocket_height");
-  double pocket_d = (pocket_w * pocket_w - pocket_h * pocket_h) / (-4. * pocket_w);
-  double pocket_r = (pocket_w / 2.0) + pocket_d;
+  double r0        = userInputs.get_model_constant_double("r0");
+  double r_seed    = userInputs.get_model_constant_double("r_seed");
+  double seed_x    = userInputs.get_model_constant_double("seed_x");
+  double seed_y    = userInputs.get_model_constant_double("seed_y");
+  double pocket_w  = userInputs.get_model_constant_double("pocket_width");
+  double pocket_h  = userInputs.get_model_constant_double("pocket_height");
+  double pocket_d  = (pocket_w * pocket_w - pocket_h * pocket_h) / (-4. * pocket_w);
+  double pocket_r  = (pocket_w / 2.0) + pocket_d;
+  double seed_time = userInputs.get_model_constant_double("seed_time");
   // ================================================================
 };

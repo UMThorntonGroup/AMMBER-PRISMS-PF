@@ -115,6 +115,20 @@ customPDE<dim, degree>::nonExplicitEquationRHS(
   sys.calculate_dhdeta();
 
   sys.calculate_detadt();
+  if (std::abs(this->currentTime - seed_time) < 0.5 * userInputs.dtValue)
+    {
+      Point<dim, VectorizedArray<double>> seed_loc = {seed_x, seed_y};
+      VectorizedArray<double>             r2 = (q_point_loc - seed_loc).norm_square();
+
+      VectorizedArray<double> seed =
+
+        0.5 * (1.0 + std::tanh((r_seed * r_seed - r2) / (r_seed) / isoSys.l_int)) /
+        userInputs.dtValue;
+      sys.op_data[0].second.detadt.val -= seed * sys.op_data[0].second.eta.val;
+      sys.op_data[1].second.detadt.val -= seed * sys.op_data[1].second.eta.val;
+      sys.op_data[2].second.detadt.val -= seed * sys.op_data[2].second.eta.val;
+      sys.op_data[3].second.detadt.val += seed;
+    }
   var_index = 0;
   sys.submit_aux_fields(variable_list, var_index);
 }
