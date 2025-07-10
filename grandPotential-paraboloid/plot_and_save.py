@@ -9,7 +9,7 @@ from visit_utils import encoding
 
 #DeleteAllPlots()
 dir_name = "frames"
-phases = {"GFE2O3_0": "Reds", "GMoO3_0": "Blues", "GFE2MoO43_0": "Oranges", "Gliquid_0": "Purples"}
+phases = {"Fe2O3_0": "Reds", "MoO3_0": "Blues", "Fe2MoO43_0": "Oranges", "liquid_0": "Purples"}
 
 # Step 1: Open a database (the whole .vtu time series)
 dbname="solution-*.vtu database"

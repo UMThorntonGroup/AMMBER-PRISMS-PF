@@ -5,7 +5,7 @@
     ],
     "convert_fractional_to_volumetric_energy": true,
     "phases": {
-        "GFE2O3": {
+        "Fe2O3": {
             "Fe2O3": {
                 "k_well": 5000000.0,
                 "c_min": 1.0,
@@ -16,7 +16,7 @@
             "D": 1.0e-20,
             "sigma": 1.0
         },
-        "GMoO3": {
+        "MoO3": {
             "Fe2O3": {
                 "k_well": 5000000.0,
                 "c_min": 0.0,
@@ -27,7 +27,7 @@
             "D": 1.0e-20,
             "sigma": 1.0
         },
-        "GFE2MoO43": {
+        "Fe2MoO43": {
             "Fe2O3": {
                 "k_well": 5000000.0,
                 "c_min": 0.25,
@@ -38,7 +38,7 @@
             "D": 1.0e-20,
             "sigma": 0.5
         },
-        "Gliquid": {
+        "liquid": {
             "Fe2O3": {
                 "k_well": 808277.7345692137,
                 "c_min": 0.37286921350049135,
@@ -53,10 +53,10 @@
     "l_int": 4.0e-10,
     "Vm": 3.1e-05,
     "order_parameters": [
-        "GFE2O3",
-        "GMoO3",
-        "Gliquid",
-        "GFE2MoO43"
+        "Fe2O3",
+        "MoO3",
+        "liquid",
+        "Fe2MoO43"
     ],
     "dimensions": {
         "length_scale": 0.0,

@@ -28,34 +28,34 @@ x = np.linspace(0.01, 0.99, 100)
 system_set = []
 for obj in objects:
     # Create a BinarySystem object for each entry
-    GFE2O3_disc = bi.BinaryIsothermalDiscretePhase("GFE2O3", x, obj["GFE2O3"](x))
-    GMoO3_disc = bi.BinaryIsothermalDiscretePhase("GMoO3", x, obj["GMoO3"](x))
-    GFE2MoO43_disc = bi.BinaryIsothermalDiscretePhase("GFE2MoO43", x, obj["GFE2MoO43"](x))
-    Gliquid_disc = bi.BinaryIsothermalDiscretePhase("Gliquid", x, obj["Gliquid"](x))
+    Fe2O3_disc = bi.BinaryIsothermalDiscretePhase("Fe2O3", x, obj["GFE2O3"](x))
+    MoO3_disc = bi.BinaryIsothermalDiscretePhase("MoO3", x, obj["GMoO3"](x))
+    Fe2MoO43_disc = bi.BinaryIsothermalDiscretePhase("Fe2MoO43", x, obj["GFE2MoO43"](x))
+    liquid_disc = bi.BinaryIsothermalDiscretePhase("liquid", x, obj["Gliquid"](x))
 
-    # plt.plot(x, obj["GFE2O3"](x), label=f"GFE2O3 at {obj['Temperature']} K")
+    # plt.plot(x, obj["Fe2O3"](x), label=f"Fe2O3 at {obj['Temperature']} K")
     # plt.savefig(f"{obj['Temperature']}.png")
 
-    Gliquid_resample = Gliquid_disc.resample(np.linspace(0.2, 0.3, 100))
+    liquid_resample = liquid_disc.resample(np.linspace(0.2, 0.3, 100))
 
     # discrete_system = bi.BinaryIsothermalDiscreteSystem(component="Fe2O3", solution_component="MoO3")
-    # discrete_system.phases["GFE2O3"] = GFE2O3_disc
-    # discrete_system.phases["GMoO3"] = GMoO3_disc
-    # discrete_system.phases["GFE2MoO43"] = GFE2MoO43_disc
-    # discrete_system.phases["Gliquid"] = Gliquid_resample
+    # discrete_system.phases["Fe2O3"] = Fe2O3_disc
+    # discrete_system.phases["MoO3"] = MoO3_disc
+    # discrete_system.phases["Fe2MoO43"] = Fe2MoO43_disc
+    # discrete_system.phases["liquid"] = liquid_resample
 
     # fit_system = bi.BinaryIsothermal2ndOrderSystem()
     # fit_system.from_discrete(discrete_system, kwellmax=1.0e11)
 
     # alternatively
-    liq_fit = bi.BinaryIsothermal2ndOrderPhase("Gliquid")
-    liq_fit.fit_phase(Gliquid_resample.xdata, Gliquid_resample.Gdata, kwellmax=1.0e11)
+    liq_fit = bi.BinaryIsothermal2ndOrderPhase("liquid")
+    liq_fit.fit_phase(liquid_resample.xdata, liquid_resample.Gdata, kwellmax=1.0e11)
     big_k = 5000000.0
     phases = {
-        "GFE2O3": bi.BinaryIsothermal2ndOrderPhase("GFE2O3", obj["GFE2O3"](1.0), big_k, 1.0 ),
-        "GMoO3": bi.BinaryIsothermal2ndOrderPhase("GMoO3", obj["GMoO3"](0.0), big_k, 0.0 ),
-        "GFE2MoO43": bi.BinaryIsothermal2ndOrderPhase("GFE2MoO43", obj["GFE2MoO43"](0.25), big_k, 0.25 ),
-        "Gliquid": liq_fit }
+        "Fe2O3": bi.BinaryIsothermal2ndOrderPhase("Fe2O3", obj["GFE2O3"](1.0), big_k, 1.0 ),
+        "MoO3": bi.BinaryIsothermal2ndOrderPhase("MoO3", obj["GMoO3"](0.0), big_k, 0.0 ),
+        "Fe2MoO43": bi.BinaryIsothermal2ndOrderPhase("Fe2MoO43", obj["GFE2MoO43"](0.25), big_k, 0.25 ),
+        "liquid": liq_fit }
     
     fit_system = bi.BinaryIsothermal2ndOrderSystem(phases=phases)
     fit_system.component="Fe2O3"
@@ -69,7 +69,7 @@ for obj in objects:
     output = {}
     output = base_system.copy()
 
-    add_to_dict(fit_system, output, add_templates=False, c0={"GFE2O3": 1.0, "GMoO3": 0.0, "GFE2MoO43": 0.25, "Gliquid": 0.25}, Vm=3.1e-5)
+    add_to_dict(fit_system, output, add_templates=False, c0={"Fe2O3": 1.0, "MoO3": 0.0, "Fe2MoO43": 0.25, "liquid": 0.25}, Vm=3.1e-5)
     system_set.append({obj['Temperature']: output})
 
 for system in system_set:

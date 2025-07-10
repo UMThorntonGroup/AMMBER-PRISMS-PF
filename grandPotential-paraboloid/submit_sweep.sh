@@ -21,7 +21,8 @@ mpirun -np $SLURM_NTASKS $main_executable
 # Generate frames and movie
 visit -cli -nowin -s plot_and_save.py
 ffmpeg -framerate 30 -i frames/frame_%04d.png -c:v mpeg4 -pix_fmt yuv420p -q:v 2 movie_$SLURM_JOB_NAME.mp4
-
+visit -cli -nowin -s calculate_fractions.py
+python3 plot_fractions.py
 # Remove excess output files
 # Loop through all files starting with 'solution-' and ending with '.vtu'
 # Sort them numerically (assuming filenames have a numeric part)
