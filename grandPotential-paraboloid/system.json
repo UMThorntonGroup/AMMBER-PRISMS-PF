@@ -1,56 +1,49 @@
 {
-    "dimensions": {
-        "length_scale": 0.0,
-        "time_scale": 0.0,
-        "energy_density_scale": 1.0
-    },
-    "convert_fractional_to_volumetric_energy": false,
-    "solution_component": "TA",
+    "solution_component": "PB",
     "components": [
-        "CU",
-        "TI"
+        "BI"
     ],
-    "Vm": 1.0,
-    "l_int": 2.0,
+    "convert_fractional_to_volumetric_energy": true,
     "phases": {
-        "SOLID": {
-            "mu_int": 10.0,
-            "D": 1.0,
-            "sigma": 1.0,
-            "f_min": 0.0,
-            "CU": {
-                "k_well": 1.0,
-                "c_min": 0.8,
-                "x0": 0.8
+        "HCP_A3": {
+            "BI": {
+                "k_well": 29787.470660447943,
+                "c_min": 0.21595644127635835,
+                "f_min": -25615.980938445544,
+                "c0": 0.2
             },
-            "TI": {
-                "k_well": 1.0,
-                "c_min": 0.1,
-                "x0": 0.1
-            }
+            "mu_int": -1.0,
+            "D": -1.0,
+            "sigma": -1.0
+        },
+        "RHOMBO_A7_1": {
+            "BI": {
+                "k_well": 800513.9334938012,
+                "c_min": 0.9890905603006129,
+                "f_min": -21878.697686949046,
+                "c0": 1.0
+            },
+            "mu_int": -1.0,
+            "D": -1.0,
+            "sigma": -1.0
         },
         "LIQUID": {
-            "mu_int": 10.0,
-            "D": 1.0,
-            "sigma": 1.0,
-            "f_min": 0.0,
-            "CU": {
-                "k_well": 0.5,
-                "c_min": 0.1,
-                "x0": 0.2
+            "BI": {
+                "k_well": 23400.295990007387,
+                "c_min": 0.29706661757515795,
+                "f_min": -24791.604063457213,
+                "c0": 0.56
             },
-            "TI": {
-                "k_well": 0.5,
-                "c_min": 0.8,
-                "x0": 0.7
-            }
+            "mu_int": -1.0,
+            "D": -1.0,
+            "sigma": -1.0
         }
     },
+    "l_int": -1.0,
+    "Vm": 3.1e-05,
     "order_parameters": [
-        "LIQUID",
-        "SOLID"
-    ],
-    "comments": [
-        "none yet"
+        "HCP_A3",
+        "RHOMBO_A7_1",
+        "LIQUID"
     ]
 }
