@@ -25,17 +25,42 @@ PbBi_Sys_neareq.phases['LIQUID'] = PbBi_Sys.phases['LIQUID'].resample_near_xpoin
 PbBi_Fit = bi.BinaryIsothermal2ndOrderSystem()
 PbBi_Fit.from_discrete(PbBi_Sys_neareq)
 
-D0 = 1e-9  # m^2/s
-E0 = 1e5  # J/mol
-k = 8.314  # J/(mol*K)
 T = temperature  # K
-diffusion_coeff_0 = D0 * np.exp(E0/(k*T))  # m^2/s
+# source https://doi.org/10.1063/1.1730280
+D0_PB = 0.432e-4  # m^2/s
+b_PB = 20.7
+Tm_PB = 600 # K
+diffusion_coeff_PB = D0_PB * np.exp(-b_PB*Tm_PB/T)  # m^2/s
+
+# source https://doi.org/10.1007/s11669-021-00868-y
+# estimate
+diffusion_coeff_LIQ = 1.1e-9  # m^2/s
+
+# assuming the same for solid phases
+diffusion_coeff_HCP_A3 = diffusion_coeff_PB  # m^2/s
+diffusion_coeff_RHOMBO_A7_1 = diffusion_coeff_PB  # m^2/s
+
+# assume 
+sigma = 0.1  # J/m^2
+mu_int = 10.0 *diffusion_coeff_LIQ / sigma
+
 # Load a system file with desired kinetics
 #with open("system.json", "r") as f:
 #    system = json.load(f)
 system = {}
 
-add_to_dict(PbBi_Fit, system, add_templates=True, c0={"HCP_A3": 0.2, "RHOMBO_A7_1": 1.0, "LIQUID": c0}, Vm=3.1e-5)
+add_to_dict(PbBi_Fit, system, add_templates=True, c0={"HCP_A3": 0.2, "RHOMBO_A7_1": 1.0, "LIQUID": c0}, Vm=2.0e-5)
+system["phases"]["HCP_A3"]["D"] = diffusion_coeff_HCP_A3
+system["phases"]["RHOMBO_A7_1"]["D"] = diffusion_coeff_RHOMBO_A7_1
+system["phases"]["LIQUID"]["D"] = diffusion_coeff_LIQ
+system["phases"]["HCP_A3"]["sigma"] = sigma
+system["phases"]["RHOMBO_A7_1"]["sigma"] = sigma
+system["phases"]["LIQUID"]["sigma"] = sigma
+system["phases"]["HCP_A3"]["mu_int"] = mu_int
+system["phases"]["RHOMBO_A7_1"]["mu_int"] = mu_int
+system["phases"]["LIQUID"]["mu_int"] = mu_int
+
+system["l_int"] = 1.0e-9
 
 with open(f"system.json", "w") as f:
     json.dump(system, f, indent=4)
