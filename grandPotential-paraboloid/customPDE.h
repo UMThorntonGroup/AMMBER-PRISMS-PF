@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <ios>
 #include <iostream>
+#include <random>
 #include <string>
 
 using namespace dealii;
@@ -31,7 +32,13 @@ public:
     isoSys.print_parameters();
     print_initial_energies();
     print_interface_properties();
+    // Initializing random variable
+    dist = distribution(-1.0, 1.0);
+    rng  = engine(2025);
   }
+
+  typedef std::mt19937_64                        engine;
+  typedef std::uniform_real_distribution<double> distribution;
 
   // Function to set the initial conditions (in ICs_and_BCs.h)
   void
@@ -128,7 +135,7 @@ private:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
-            constV(0.), // detadt_field
+            constV(0.),       // detadt_field
             {}                // dhdeta
           }
         });
@@ -204,4 +211,8 @@ private:
 
   double r0 = userInputs.get_model_constant_double("r0");
   // ================================================================
+  // Declaring random number generator (Type std::mt19937_64)
+  engine rng;
+  // Declaring distribution (Type std::uniform_real_distribution<double>)
+  distribution dist;
 };
