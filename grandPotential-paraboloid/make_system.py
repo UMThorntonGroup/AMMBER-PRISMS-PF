@@ -6,14 +6,15 @@ import matplotlib.pyplot as plt
 from pycalphad import Database
 
 tdb_file = "NIST-solder.tdb"
+tdb_file = "/Users/xmen/Desktop/PRISMS2/AMMBER-PRISMS-PF/grandPotential-paraboloid/NIST-solder.tdb"
 db = Database(tdb_file)
 elements = ["PB", "BI"]
 component = "BI"
 solution_component = "PB"
-eutectic_temperature = 400.0
+eutectic_temperature = 398.0
 eutectic_comp = 0.56
 
-undercooling = 20.0
+undercooling = 40.0
 c0 = 0.56
 
 temperature = eutectic_temperature - undercooling
@@ -42,7 +43,7 @@ diffusion_coeff_RHOMBO_A7_1 = diffusion_coeff_PB  # m^2/s
 
 # assume 
 sigma = 0.1  # J/m^2
-mu_int = 10.0 *diffusion_coeff_LIQ / sigma
+mu_int = 1.0 *diffusion_coeff_LIQ / sigma
 
 # Load a system file with desired kinetics
 #with open("system.json", "r") as f:
@@ -65,18 +66,36 @@ system["l_int"] = 1.0e-9
 with open(f"system.json", "w") as f:
     json.dump(system, f, indent=4)
 
-
 import matplotlib.pyplot as plt
-from pycalphad import binplot
-import pycalphad.variables as v
+def quad_phase(x, quad_phase):
+    return 0.5* quad_phase.kwell * (x - quad_phase.cmin)**2 + quad_phase.fmin
+x = np.linspace(0, 1, 100)
+plt.plot(x, quad_phase(x, PbBi_Fit.phases['HCP_A3']), label=f"HCP_A3 at {temperature} K", linestyle='--', color='orange')
+plt.plot(x, quad_phase(x, PbBi_Fit.phases['RHOMBO_A7_1']), label=f"RHOMBO_A7_1 at {temperature} K", linestyle='--', color='blue')
+plt.plot(x, quad_phase(x, PbBi_Fit.phases['LIQUID']), label=f"LIQUID at {temperature} K", linestyle='--', color='green')
+print(list(PbBi_Sys.phases.keys()))
+print(list(PbBi_Sys_neareq.phases.keys()))
+print(PbBi_Sys_neareq.phases['HCP_A3'].xdata.shape, PbBi_Sys_neareq.phases['HCP_A3'].Gdata.shape)
+plt.plot(PbBi_Sys.phases['HCP_A3'].xdata, PbBi_Sys.phases['HCP_A3'].Gdata, label=f"HCP_A3 at {temperature} K")
+plt.plot(PbBi_Sys.phases['RHOMBO_A7'].xdata, PbBi_Sys.phases['RHOMBO_A7'].Gdata, label=f"RHOMBO_A7 at {temperature} K")
+plt.plot(PbBi_Sys.phases['LIQUID'].xdata, PbBi_Sys.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K")
+plt.plot(PbBi_Sys_neareq.phases['HCP_A3'].xdata, PbBi_Sys_neareq.phases['HCP_A3'].Gdata, label=f"HCP_A3 at {temperature} K", color='orange')
+plt.plot(PbBi_Sys_neareq.phases['RHOMBO_A7_1'].xdata, PbBi_Sys_neareq.phases['RHOMBO_A7_1'].Gdata, label=f"RHOMBO_A7 at {temperature} K", color='blue')
+plt.plot(PbBi_Sys_neareq.phases['LIQUID'].xdata, PbBi_Sys_neareq.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K", color='green')
+plt.ylim(top=-10000, bottom = -30000)
+plt.show()
 
-all_phases = list(db.phases.keys())
-
-# Create a matplotlib Figure object and get the active Axes
-fig = plt.figure(figsize=(9,6))
-axes = fig.gca()
-
-# Compute the phase diagram and plot it on the existing axes using the `plot_kwargs={'ax': axes}` keyword argument
-binplot(db, ['PB', 'BI', 'VA'] , all_phases, {v.X('BI'):(0,1,0.02), v.T: (200, 600, 10), v.P:101325, v.N: 1}, plot_kwargs={'ax': axes})
-
-#plt.show()
+#import matplotlib.pyplot as plt
+#from pycalphad import binplot
+#import pycalphad.variables as v
+#
+#all_phases = list(db.phases.keys())
+#
+## Create a matplotlib Figure object and get the active Axes
+#fig = plt.figure(figsize=(9,6))
+#axes = fig.gca()
+#
+## Compute the phase diagram and plot it on the existing axes using the `plot_kwargs={'ax': axes}` keyword argument
+#binplot(db, ['PB', 'BI', 'VA'] , all_phases, {v.X('BI'):(0,1,0.02), v.T: (200, 600, 10), v.P:101325, v.N: 1}, plot_kwargs={'ax': axes})
+#
+##plt.show()
