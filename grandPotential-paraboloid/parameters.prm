@@ -26,7 +26,7 @@ set Mesh adaptivity = true
 set Max refinement level = 9
 set Min refinement level = 4
 
-set Steps between remeshing operations = 25
+set Steps between remeshing operations = 200
 
 # =================================================================================
 # Set the time step parameters
@@ -67,7 +67,7 @@ set Number of checkpoints = 0
 # =================================================================================
 
 # Particle radius
-set Model constant r0 = 32.0, DOUBLE
+set Model constant r0 = 10.0, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants
