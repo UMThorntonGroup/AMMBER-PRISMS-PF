@@ -234,13 +234,31 @@ public:
   void
   calculate_detadt()
   {
+    // Calculate the local interface mobility
+    scalarValue L               = scalarValue(0.0);
+    scalarValue sum_pair_sq_eta = scalarValue(0.0);
+    // scalarValue sq_sum_sq_eta   = sum_sq_eta.val * sum_sq_eta.val;
+    for (uint alpha_index = 0; alpha_index < phase_data.size(); alpha_index++)
+      {
+        for (uint beta_index = 0; beta_index < alpha_index; beta_index++)
+          {
+            double mu_ab =
+              2.0 *
+              (isoSys->phases[alpha_index].mu_int * isoSys->phases[beta_index].mu_int) /
+              (isoSys->phases[alpha_index].mu_int + isoSys->phases[beta_index].mu_int);
+            double L_ab = 4.0 * mu_ab / isoSys->l_int / 3.0;
+            L += L_ab * phase_data[alpha_index].h.val * phase_data[beta_index].h.val;
+            sum_pair_sq_eta +=
+              phase_data[alpha_index].h.val * phase_data[beta_index].h.val;
+          }
+      }
+    L /= sum_pair_sq_eta + 1.0e-8;
     for (auto &[alpha_index, op] : op_data)
       {
         const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(alpha_index);
 
         double m     = 6.00 * phase_info.sigma / isoSys->l_int;
         double kappa = 0.75 * phase_info.sigma * isoSys->l_int;
-        double L     = 4.00 * phase_info.mu_int / isoSys->l_int / 3.00;
 
         // Interface term
         scalarVariation interface_term;
