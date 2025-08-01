@@ -238,21 +238,24 @@ public:
     scalarValue L               = scalarValue(0.0);
     scalarValue sum_pair_sq_eta = scalarValue(0.0);
     // scalarValue sq_sum_sq_eta   = sum_sq_eta.val * sum_sq_eta.val;
-    for (uint alpha_index = 0; alpha_index < phase_data.size(); alpha_index++)
+    for (const auto &[alpha_index, op1] : op_data)
       {
-        for (uint beta_index = 0; beta_index < alpha_index; beta_index++)
+        for (const auto &[beta_index, op2] : op_data)
           {
+            if (&op1 == &op2)
+              {
+                continue; // Skip self-interaction
+              }
             double mu_ab =
               2.0 *
               (isoSys->phases[alpha_index].mu_int * isoSys->phases[beta_index].mu_int) /
               (isoSys->phases[alpha_index].mu_int + isoSys->phases[beta_index].mu_int);
             double L_ab = 4.0 * mu_ab / isoSys->l_int / 3.0;
-            L += L_ab * phase_data[alpha_index].h.val * phase_data[beta_index].h.val;
-            sum_pair_sq_eta +=
-              phase_data[alpha_index].h.val * phase_data[beta_index].h.val;
+            L += L_ab * (op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val);
+            sum_pair_sq_eta += op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val;
           }
       }
-    L /= sum_pair_sq_eta + 1.0e-8;
+    L /= 2.0 * sum_pair_sq_eta + 1.0e-8;
     for (auto &[alpha_index, op] : op_data)
       {
         const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(alpha_index);
