@@ -20,20 +20,20 @@ set Subdivisions X = 1
 set Subdivisions Y = 1
 set Subdivisions Z = 1
 
-set Refine factor = 9
+set Refine factor = 7
 set Mesh adaptivity = true
 
-set Max refinement level = 9
-set Min refinement level = 4
+set Max refinement level = 7
+set Min refinement level = 3
 
-set Steps between remeshing operations = 200
+set Steps between remeshing operations = 250
 
 # =================================================================================
 # Set the time step parameters
 # =================================================================================
 set Time step = 1.0e-3
 
-set Number of time steps = 10000
+set Number of time steps = 100000
 
 # =================================================================================
 # Set the output parameters
@@ -42,7 +42,7 @@ set Output condition = EQUAL_SPACING
 
 set Number of outputs = 100
 
-set Skip print steps = 50
+set Skip print steps = 500
 
 # =================================================================================
 # Set the boundary conditions
@@ -67,7 +67,8 @@ set Number of checkpoints = 0
 # =================================================================================
 
 # Particle radius
-set Model constant r0 = 10.0, DOUBLE
+set Model constant r0 = 8.0, DOUBLE
+set Model constant spacing = 48.0, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants

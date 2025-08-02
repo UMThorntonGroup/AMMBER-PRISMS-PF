@@ -6,21 +6,23 @@ import matplotlib.pyplot as plt
 from pycalphad import Database
 
 tdb_file = "NIST-solder.tdb"
-tdb_file = "/Users/xmen/Desktop/PRISMS2/AMMBER-PRISMS-PF/grandPotential-paraboloid/NIST-solder.tdb"
+#tdb_file = "mmc4.tdb"
 db = Database(tdb_file)
 elements = ["PB", "BI"]
 component = "BI"
 solution_component = "PB"
-eutectic_temperature = 398.0
-eutectic_comp = 0.56
+eutectic_temperature = 399.06
+eutectic_comp = 0.553
 
-undercooling = 40.0
-c0 = 0.56
+undercooling = 2.0
+c0 = 0.553
 
 temperature = eutectic_temperature - undercooling
 PbBi_Sys = bi.BinaryIsothermalDiscreteSystem()
 PbBi_Sys.fromTDB(db, component, solution_component, temperature)
 PbBi_Sys_neareq = PbBi_Sys.resample_near_equilibrium(eutectic_comp)
+eq = PbBi_Sys.get_equilibrium(eutectic_comp)
+print(eq)
 
 PbBi_Sys_neareq.phases['LIQUID'] = PbBi_Sys.phases['LIQUID'].resample_near_xpoint(eutectic_comp)
 PbBi_Fit = bi.BinaryIsothermal2ndOrderSystem()
@@ -35,22 +37,23 @@ diffusion_coeff_PB = D0_PB * np.exp(-b_PB*Tm_PB/T)  # m^2/s
 
 # source https://doi.org/10.1007/s11669-021-00868-y
 # estimate
-diffusion_coeff_LIQ = 1.1e-9  # m^2/s
+diffusion_coeff_LIQ = 1.1e-9#1.1e-9  # m^2/s
 
 # assuming the same for solid phases
-diffusion_coeff_HCP_A3 = diffusion_coeff_PB  # m^2/s
-diffusion_coeff_RHOMBO_A7_1 = diffusion_coeff_PB  # m^2/s
+diffusion_coeff_HCP_A3 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
+diffusion_coeff_RHOMBO_A7_1 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
 
 # assume 
 sigma = 0.1  # J/m^2
-mu_int = 1.0 *diffusion_coeff_LIQ / sigma
+mu_int = 2.0e-10 #0.1 *diffusion_coeff_LIQ / sigma
+l_int = 2e-7  # m, interfacial length scale
 
 # Load a system file with desired kinetics
 #with open("system.json", "r") as f:
 #    system = json.load(f)
 system = {}
 
-add_to_dict(PbBi_Fit, system, add_templates=True, c0={"HCP_A3": 0.2, "RHOMBO_A7_1": 1.0, "LIQUID": c0}, Vm=2.0e-5)
+add_to_dict(PbBi_Fit, system, add_templates=True, c0={"HCP_A3": eq["HCP_A3"][0], "RHOMBO_A7_1": eq["RHOMBO_A7_1"][0], "LIQUID": c0}, Vm=2.0e-5)
 system["phases"]["HCP_A3"]["D"] = diffusion_coeff_HCP_A3
 system["phases"]["RHOMBO_A7_1"]["D"] = diffusion_coeff_RHOMBO_A7_1
 system["phases"]["LIQUID"]["D"] = diffusion_coeff_LIQ
@@ -61,7 +64,7 @@ system["phases"]["HCP_A3"]["mu_int"] = mu_int
 system["phases"]["RHOMBO_A7_1"]["mu_int"] = mu_int
 system["phases"]["LIQUID"]["mu_int"] = mu_int
 
-system["l_int"] = 1.0e-9
+system["l_int"] = l_int
 
 with open(f"system.json", "w") as f:
     json.dump(system, f, indent=4)

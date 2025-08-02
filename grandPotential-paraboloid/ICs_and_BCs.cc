@@ -38,14 +38,18 @@ customPDE<dim, degree>::setInitialCondition([[maybe_unused]] const Point<dim>  &
   // TODO: Make relevant geometries
   [[maybe_unused]] double circular = interface(0.5 * (r0 * r0 - r2) / r0);
   [[maybe_unused]] double flat     = interface(p[1] - r0);
-  [[maybe_unused]] double wavy =
-    interface(std::sin(2.0 * 3.14159265 * x / r0) * r0 / (2.0 * 3.14159265));
+  [[maybe_unused]] double wavy     = interface(
+    (std::sin(2.0 * 3.14159265 * x / spacing) + 0.6) * spacing / (2.0 * 3.14159265));
 
   // TODO: Populate eta0 with the initial condition for the order parameters
   std::vector<double> eta0(isoSys.order_params.size(), 0.0);
-  eta0[0] = (1.0 - flat) * (wavy) + (0.1 * dist(rng));
-  eta0[1] = (1.0 - flat) * (1.0 - wavy) + (0.1 * dist(rng));
+  eta0[0] = (1.0 - flat) * (wavy + 0.1 * dist(rng));
+  eta0[1] = (1.0 - flat) * (1.0 - wavy + 0.1 * dist(rng));
   eta0[2] = flat + (1.0 - flat) * 0.0;
+  // Noise instead
+  // eta0[0] = (1.0 - flat) * ((1.0 / 2.0) + 0.1 * dist(rng));
+  // eta0[1] = (1.0 - flat) * ((1.0 / 2.0) + 0.1 * dist(rng));
+  // eta0[2] = flat;
   // ---------------------------------------------------------------------
   //  < ENTER THE INITIAL CONDITIONS HERE
   // ---------------------------------------------------------------------

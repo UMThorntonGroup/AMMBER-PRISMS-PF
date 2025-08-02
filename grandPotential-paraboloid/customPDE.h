@@ -135,7 +135,7 @@ private:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
-            constV(0.),       // detadt_field
+            constV(0.), // detadt_field
             {}                // dhdeta
           }
         });
@@ -209,7 +209,8 @@ private:
    */
   std::map<std::string, double> initial_omega;
 
-  double r0 = userInputs.get_model_constant_double("r0");
+  double r0      = userInputs.get_model_constant_double("r0");
+  double spacing = userInputs.get_model_constant_double("spacing");
   // ================================================================
   // Declaring random number generator (Type std::mt19937_64)
   engine rng;
