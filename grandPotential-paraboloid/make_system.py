@@ -5,47 +5,46 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pycalphad import Database
 
-tdb_file = "NIST-solder.tdb"
-#tdb_file = "mmc4.tdb"
+tdb_file = "AlCu.TDB"
 db = Database(tdb_file)
-elements = ["PB", "BI"]
-component = "BI"
-solution_component = "PB"
-eutectic_temperature = 399.06
-eutectic_comp = 0.553
+elements = ["AL", "CU"]
+component = "CU"
+solution_component = "AL"
+eutectic_temperature = 819.0  # K
+eutectic_comp = 0.177
 
-undercooling = 2.0
-c0 = 0.553
+undercooling = 8.0
+c0 = 0.177
 
 temperature = eutectic_temperature - undercooling
-PbBi_Sys = bi.BinaryIsothermalDiscreteSystem()
-PbBi_Sys.fromTDB(db, component, solution_component, temperature)
-PbBi_Sys_neareq = PbBi_Sys.resample_near_equilibrium(eutectic_comp)
-eq = PbBi_Sys.get_equilibrium(eutectic_comp)
+AlCu_Sys = bi.BinaryIsothermalDiscreteSystem()
+AlCu_Sys.fromTDB(db, component, solution_component, temperature)
+AlCu_Sys_neareq = AlCu_Sys.resample_near_equilibrium(eutectic_comp)
+eq = AlCu_Sys.get_equilibrium(eutectic_comp)
 print(eq)
 
-PbBi_Sys_neareq.phases['LIQUID'] = PbBi_Sys.phases['LIQUID'].resample_near_xpoint(eutectic_comp)
-PbBi_Fit = bi.BinaryIsothermal2ndOrderSystem()
-PbBi_Fit.from_discrete(PbBi_Sys_neareq)
+AlCu_Sys_neareq.phases['LIQUID'] = AlCu_Sys.phases['LIQUID'].resample_near_xpoint(eutectic_comp)
+AlCu_Fit = bi.BinaryIsothermal2ndOrderSystem()
+AlCu_Fit.from_discrete(AlCu_Sys_neareq)
 
-T = temperature  # K
-# source https://doi.org/10.1063/1.1730280
-D0_PB = 0.432e-4  # m^2/s
-b_PB = 20.7
-Tm_PB = 600 # K
-diffusion_coeff_PB = D0_PB * np.exp(-b_PB*Tm_PB/T)  # m^2/s
+#T = temperature  # K
+## source https://doi.org/10.1063/1.1730280
+#D0_PB = 0.432e-4  # m^2/s
+#b_PB = 20.7
+#Tm_PB = 600 # K
+#diffusion_coeff_PB = D0_PB * np.exp(-b_PB*Tm_PB/T)  # m^2/s
 
 # source https://doi.org/10.1007/s11669-021-00868-y
 # estimate
 diffusion_coeff_LIQ = 1.1e-9#1.1e-9  # m^2/s
 
 # assuming the same for solid phases
-diffusion_coeff_HCP_A3 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
-diffusion_coeff_RHOMBO_A7_1 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
+diffusion_coeff_FCC_A1_0 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
+diffusion_coeff_AL2CU_1 = diffusion_coeff_LIQ #diffusion_coeff_PB  # m^2/s
 
 # assume 
-sigma = 0.1  # J/m^2
-mu_int = 2.0e-10 #0.1 *diffusion_coeff_LIQ / sigma
+sigma = 0.2  # J/m^2
+mu_int = 2.0e-9 #0.1 *diffusion_coeff_LIQ / sigma
 l_int = 2e-7  # m, interfacial length scale
 
 # Load a system file with desired kinetics
@@ -53,15 +52,15 @@ l_int = 2e-7  # m, interfacial length scale
 #    system = json.load(f)
 system = {}
 
-add_to_dict(PbBi_Fit, system, add_templates=True, c0={"HCP_A3": eq["HCP_A3"][0], "RHOMBO_A7_1": eq["RHOMBO_A7_1"][0], "LIQUID": c0}, Vm=2.0e-5)
-system["phases"]["HCP_A3"]["D"] = diffusion_coeff_HCP_A3
-system["phases"]["RHOMBO_A7_1"]["D"] = diffusion_coeff_RHOMBO_A7_1
+add_to_dict(AlCu_Fit, system, add_templates=True, c0={"FCC_A1_0": eq["FCC_A1_0"][0], "AL2CU_1": eq["AL2CU_1"][0], "LIQUID": c0}, Vm=1.0e-5)
+system["phases"]["FCC_A1_0"]["D"] = diffusion_coeff_FCC_A1_0
+system["phases"]["AL2CU_1"]["D"] = diffusion_coeff_AL2CU_1
 system["phases"]["LIQUID"]["D"] = diffusion_coeff_LIQ
-system["phases"]["HCP_A3"]["sigma"] = sigma
-system["phases"]["RHOMBO_A7_1"]["sigma"] = sigma
+system["phases"]["FCC_A1_0"]["sigma"] = sigma
+system["phases"]["AL2CU_1"]["sigma"] = sigma
 system["phases"]["LIQUID"]["sigma"] = sigma
-system["phases"]["HCP_A3"]["mu_int"] = mu_int
-system["phases"]["RHOMBO_A7_1"]["mu_int"] = mu_int
+system["phases"]["FCC_A1_0"]["mu_int"] = mu_int
+system["phases"]["AL2CU_1"]["mu_int"] = mu_int
 system["phases"]["LIQUID"]["mu_int"] = mu_int
 
 system["l_int"] = l_int
@@ -73,20 +72,21 @@ import matplotlib.pyplot as plt
 def quad_phase(x, quad_phase):
     return 0.5* quad_phase.kwell * (x - quad_phase.cmin)**2 + quad_phase.fmin
 x = np.linspace(0, 1, 100)
-plt.plot(x, quad_phase(x, PbBi_Fit.phases['HCP_A3']), label=f"HCP_A3 at {temperature} K", linestyle='--', color='orange')
-plt.plot(x, quad_phase(x, PbBi_Fit.phases['RHOMBO_A7_1']), label=f"RHOMBO_A7_1 at {temperature} K", linestyle='--', color='blue')
-plt.plot(x, quad_phase(x, PbBi_Fit.phases['LIQUID']), label=f"LIQUID at {temperature} K", linestyle='--', color='green')
-print(list(PbBi_Sys.phases.keys()))
-print(list(PbBi_Sys_neareq.phases.keys()))
-print(PbBi_Sys_neareq.phases['HCP_A3'].xdata.shape, PbBi_Sys_neareq.phases['HCP_A3'].Gdata.shape)
-plt.plot(PbBi_Sys.phases['HCP_A3'].xdata, PbBi_Sys.phases['HCP_A3'].Gdata, label=f"HCP_A3 at {temperature} K")
-plt.plot(PbBi_Sys.phases['RHOMBO_A7'].xdata, PbBi_Sys.phases['RHOMBO_A7'].Gdata, label=f"RHOMBO_A7 at {temperature} K")
-plt.plot(PbBi_Sys.phases['LIQUID'].xdata, PbBi_Sys.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K")
-plt.plot(PbBi_Sys_neareq.phases['HCP_A3'].xdata, PbBi_Sys_neareq.phases['HCP_A3'].Gdata, label=f"HCP_A3 at {temperature} K", color='orange')
-plt.plot(PbBi_Sys_neareq.phases['RHOMBO_A7_1'].xdata, PbBi_Sys_neareq.phases['RHOMBO_A7_1'].Gdata, label=f"RHOMBO_A7 at {temperature} K", color='blue')
-plt.plot(PbBi_Sys_neareq.phases['LIQUID'].xdata, PbBi_Sys_neareq.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K", color='green')
-plt.ylim(top=-10000, bottom = -30000)
-plt.show()
+plt.plot(x, quad_phase(x, AlCu_Fit.phases['FCC_A1_0']), label=f"FCC_A1_0 at {temperature} K", linestyle='--', color='orange')
+plt.plot(x, quad_phase(x, AlCu_Fit.phases['AL2CU_1']), label=f"AL2CU_1 at {temperature} K", linestyle='--', color='blue')
+plt.plot(x, quad_phase(x, AlCu_Fit.phases['LIQUID']), label=f"LIQUID at {temperature} K", linestyle='--', color='green')
+print(list(AlCu_Sys.phases.keys()))
+print(list(AlCu_Sys_neareq.phases.keys()))
+#print(AlCu_Sys_neareq.phases['FCC_A1_0'].xdata.shape, AlCu_Sys_neareq.phases['FCC_A1_0'].Gdata.shape)
+plt.plot(AlCu_Sys.phases['FCC_A1'].xdata, AlCu_Sys.phases['FCC_A1'].Gdata, label=f"FCC_A1 at {temperature} K")
+plt.plot(AlCu_Sys.phases['AL2CU'].xdata, AlCu_Sys.phases['AL2CU'].Gdata, label=f"AL2CU at {temperature} K")
+plt.plot(AlCu_Sys.phases['LIQUID'].xdata, AlCu_Sys.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K")
+plt.plot(AlCu_Sys_neareq.phases['FCC_A1_0'].xdata, AlCu_Sys_neareq.phases['FCC_A1_0'].Gdata, label=f"FCC_A1_0 at {temperature} K", color='orange')
+plt.plot(AlCu_Sys_neareq.phases['AL2CU_1'].xdata, AlCu_Sys_neareq.phases['AL2CU_1'].Gdata, label=f"AL2CU_1 at {temperature} K", color='blue')
+plt.plot(AlCu_Sys_neareq.phases['LIQUID'].xdata, AlCu_Sys_neareq.phases['LIQUID'].Gdata, label=f"LIQUID at {temperature} K", color='green')
+plt.ylim(top=-25000, bottom = -60000)
+plt.xlim(0,0.34)
+plt.savefig("AlCu_energy.png")
 
 #import matplotlib.pyplot as plt
 #from pycalphad import binplot
