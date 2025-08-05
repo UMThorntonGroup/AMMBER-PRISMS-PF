@@ -69,6 +69,7 @@ public:
   {
     scalarField              eta;
     scalarVariation          detadt;
+    scalarValue              detadt_field = dealii::make_vectorized_array(0.);
     std::vector<scalarField> dhdeta;
   };
 
@@ -120,6 +121,38 @@ public:
    */
   void
   initialize_fields_explicit(
+    const variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
+    uint                                                                  &var_index)
+  {
+    op_data.clear();
+    op_data.reserve(isoSys->order_params.size());
+    mu.resize(isoSys->num_comps);
+    for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
+      {
+        mu[comp_index].val  = variable_list.get_scalar_value(var_index);
+        mu[comp_index].grad = variable_list.get_scalar_gradient(var_index);
+        var_index++;
+      }
+    for (const auto &phase_index : isoSys->order_params)
+      {
+        OPData op;
+        op.eta.val  = variable_list.get_scalar_value(var_index);
+        op.eta.grad = variable_list.get_scalar_gradient(var_index);
+        op.detadt_field =
+          variable_list.get_scalar_value(var_index + isoSys->order_params.size());
+        op.dhdeta.resize(isoSys->phases.size());
+        op_data.push_back({phase_index, op});
+        var_index++;
+      }
+  }
+
+  /**
+   * @brief Initialize the fields for the PDE
+   * @param variable_list The variable list
+   * @param var_index The starting index for the block of fields
+   */
+  void
+  initialize_fields_nonexplicit(
     const variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
     uint                                                                  &var_index)
   {
@@ -393,26 +426,11 @@ public:
         // dmudt -= op.detadt * dcdeta_sum; // NOTATION
         for (uint comp_index = 0; comp_index < isoSys->num_comps; comp_index++)
           {
-            dmudt[comp_index] -= op.detadt * dcdeta_sum[comp_index];
+            dmudt[comp_index] -= op.detadt_field * dcdeta_sum[comp_index].val;
           }
       }
     // Convert from dcdt to dmudt
     dmudt = prod(local_suscept_inv, dmudt);
-  }
-
-  /**
-   * @brief Calculate the information needed to solve the evolution equations in the
-   * proper order
-   */
-  void
-  calculate_locals()
-  {
-    calculate_deltas();
-    calculate_omega_phase();
-    calculate_sum_sq_eta();
-    calculate_h();
-    calculate_dhdeta();
-    calculate_local_mobility();
   }
 
   /**
@@ -440,9 +458,28 @@ public:
       {
         variable_list.set_scalar_value_term_RHS(var_index,
                                                 op.eta.val +
-                                                  op.detadt.val * userInputs->dtValue);
-        variable_list.set_scalar_gradient_term_RHS(var_index,
-                                                   -op.detadt.vec * userInputs->dtValue);
+                                                  op.detadt_field * userInputs->dtValue);
+        variable_list.set_scalar_gradient_term_RHS(var_index, scalarGrad());
+        var_index++;
+      }
+  }
+
+  /**
+   * @brief Submit the fields to PRISMS-PF
+   * @param variable_list The PRISMS-PF variable list
+   * @param var_index The starting index for the block of fields
+   */
+  void
+  submit_aux_fields(
+    variableContainer<dim, degree, dealii::VectorizedArray<double>> &variable_list,
+    uint                                                            &var_index)
+  {
+    var_index += isoSys->num_comps;           // Skip the mu fields
+    var_index += isoSys->order_params.size(); // Skip the op fields
+    for (auto &[phase_index, op] : op_data)
+      {
+        variable_list.set_scalar_value_term_RHS(var_index, op.detadt.val);
+        variable_list.set_scalar_gradient_term_RHS(var_index, -op.detadt.vec);
         var_index++;
       }
   }
