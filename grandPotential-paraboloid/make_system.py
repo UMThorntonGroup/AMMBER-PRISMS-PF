@@ -27,18 +27,11 @@ AlCu_Sys_neareq.phases['LIQUID'] = AlCu_Sys.phases['LIQUID'].resample_near_xpoin
 AlCu_Fit = bi.BinaryIsothermal2ndOrderSystem()
 AlCu_Fit.from_discrete(AlCu_Sys_neareq)
 
-#T = temperature  # K
-## source https://doi.org/10.1063/1.1730280
-#D0_PB = 0.432e-4  # m^2/s
-#b_PB = 20.7
-#Tm_PB = 600 # K
-#diffusion_coeff_PB = D0_PB * np.exp(-b_PB*Tm_PB/T)  # m^2/s
 
-# source https://doi.org/10.1007/s11669-021-00868-y
-# estimate
+# typical value
 diffusion_coeff_LIQ = 1.1e-9#1.1e-9  # m^2/s
 
-# assuming the same for solid phases
+# assuming 100x lower for solid phases
 diffusion_coeff_FCC_A1_0 = diffusion_coeff_LIQ/100 # m^2/s
 diffusion_coeff_AL2CU_1 = diffusion_coeff_LIQ /100 # m^2/s
 
@@ -87,6 +80,7 @@ plt.ylim(top=-25000, bottom = -50000)
 plt.xlim(0,0.34)
 plt.savefig("AlCu_energy.png", dpi=300, bbox_inches='tight')
 
+## Phase diagram
 #import matplotlib.pyplot as plt
 #from pycalphad import binplot
 #import pycalphad.variables as v
