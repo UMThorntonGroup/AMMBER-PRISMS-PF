@@ -1,0 +1,37 @@
+set dim = 2
+set degree = 1
+
+set global refinement = 8
+subsection Rectangular mesh
+  set x size = 100.0
+  set y size = 100.0
+  set z size = 100.0
+  set x subdivisions = 1
+  set y subdivisions = 1
+  set z subdivisions = 1
+end
+
+set time step = 1.0
+
+set number steps = 10000
+subsection output
+  set condition = EQUAL_SPACING
+  set number = 100
+end
+
+include BC_AMR.prm
+
+set Model constant r0 = 1.0, DOUBLE
+
+# =================================================================================
+# Set the automatic parameter selection constants
+# =================================================================================
+
+# Design factor (1/safety factor) for reccommending timestep.
+# A value in (0, 1), practically in [0.1, 0.8]
+# lower value -> more stable
+set Model constant time_scale_stability_factor = 0.5, DOUBLE
+
+# Number of points in interface when automatically selecting length scale
+# n > 4 reccommended
+set Model constant num_points_in_interface = 6.0, DOUBLE
