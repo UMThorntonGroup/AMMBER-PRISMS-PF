@@ -1,17 +1,17 @@
 set dim = 2
 set degree = 1
 
-set global refinement = 8
+set global refinement = 9
 subsection Rectangular mesh
-  set x size = 100.0
-  set y size = 100.0
-  set z size = 100.0
+  set x size = 128.0
+  set y size = 128.0
+  set z size = 128.0
   set x subdivisions = 1
   set y subdivisions = 1
   set z subdivisions = 1
 end
 
-set time step = 1.0
+set time step = 1.0e-3
 
 set number steps = 10000
 subsection output

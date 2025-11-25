@@ -7,6 +7,7 @@
 
 #include <fstream>
 #include <prismspf/config.h>
+#include <prismspf/core/conditional_ostreams.h>
 #include <prismspf/core/pde_operator.h>
 #include <prismspf/core/phase_field_tools.h>
 #include <prismspf/core/variable_attribute_loader.h>
@@ -91,9 +92,13 @@ public:
                      PhaseFieldTools<dim>           &_pf_tools)
     : PDEOperator<dim, degree, number>(_user_inputs, _pf_tools)
   {
+    ConditionalOStreams::pout_base() << "Input System\n";
+    system.print_parameters();
     system_nd =
       nondimensionalize(system, system.select_scales(input_scales, _user_inputs));
     r0 = get_user_inputs().get_user_constants().get_model_constant_double("r0");
+    ConditionalOStreams::pout_base() << "Nondimensionalized System\n";
+    system_nd.print_parameters();
   }
 
 private:

@@ -229,7 +229,9 @@ public:
         min_dx =
           std::min(min_dx,
                    double(spc_disc.get_subdivisions()[i]) * spc_disc.get_size()[i] /
-                     std::pow(2.0, spc_disc.get_max_refinement()));
+                     std::pow(2.0,
+                              std::max(spc_disc.get_global_refinement(),
+                                       spc_disc.get_max_refinement())));
       }
     if (input_scales.length_scale == 0.0)
       {
@@ -305,7 +307,7 @@ public:
    * @brief Print the parameters to the console
    */
   void
-  print_parameters()
+  print_parameters() const
   {
     // Set column width
     const int col_width  = 15;
@@ -313,18 +315,15 @@ public:
 
     // Print header
     prisms::ConditionalOStreams::pout_base()
-      << std::left << std::setw(col_width) << "Name" << std::setw(col_width)
-      << "Dimensionless" << std::setw(col_width) << "Dimensional"
+      << std::left << std::setw(col_width) << "Name" << std::setw(col_width) << "Value"
       << "\n";
     prisms::ConditionalOStreams::pout_base() << std::string(line_width, '-') << "\n";
 
     // Print Vm and l_int
     prisms::ConditionalOStreams::pout_base()
-      << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm
-      << std::setw(col_width) << Vm << "\n";
+      << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm << "\n";
     prisms::ConditionalOStreams::pout_base()
-      << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int
-      << std::setw(col_width) << l_int << "\n";
+      << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int << "\n";
 
     // Print component information
     for (const auto &comp_name : comp_names)
@@ -341,13 +340,12 @@ public:
           << std::setw(col_width) << phase.name << "\n";
         prisms::ConditionalOStreams::pout_base()
           << std::setw(col_width) << "mu_int:" << std::setw(col_width) << phase.mu_int
-          << std::setw(col_width) << phase.mu_int << "\n";
+          << "\n";
         prisms::ConditionalOStreams::pout_base()
-          << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D
-          << std::setw(col_width) << phase.D << "\n";
+          << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D << "\n";
         prisms::ConditionalOStreams::pout_base()
           << std::setw(col_width) << "sigma:" << std::setw(col_width) << phase.sigma
-          << std::setw(col_width) << phase.sigma << "\n";
+          << "\n";
 
         for (const PhaseCompInfo &comp : phase.comps)
           {
@@ -355,7 +353,7 @@ public:
               << std::setw(col_width) << comp.name << "\n";
             prisms::ConditionalOStreams::pout_base()
               << std::setw(col_width) << "k_well:" << std::setw(col_width) << comp.k_well
-              << std::setw(col_width) << comp.k_well << "\n";
+              << "\n";
             prisms::ConditionalOStreams::pout_base()
               << std::setw(col_width) << "c_min:" << std::setw(col_width) << comp.c_min
               << "\n";
