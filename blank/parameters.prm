@@ -13,15 +13,19 @@ end
 
 set time step = 1.0e-3
 
-set number steps = 10000
+set number steps = 100000
 subsection output
   set condition = EQUAL_SPACING
   set number = 100
 end
 
+set mesh adaptivity = true
+set max refinement = 9
+set min refinement = 4
+set remeshing period = 250
 include BC_AMR.prm
 
-set Model constant r0 = 1.0, DOUBLE
+set Model constant r0 = 64.0, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants

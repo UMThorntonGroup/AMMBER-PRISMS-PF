@@ -136,7 +136,7 @@ CustomPDE<dim, degree, number>::compute_postprocess_explicit_rhs(
   ppsys.initialize_fields_postprocess(variable_list, var_index);
   ppsys.calculate_sum_sq_eta();
   ppsys.calculate_h();
-  uint pp_index = 0;
+  uint pp_index = var_index;
   ppsys.submit_pp_fields(variable_list, pp_index);
 }
 

@@ -1,6 +1,12 @@
 // SPDX-FileCopyrightText: © 2025 PRISMS Center at the University of Michigan
 // SPDX-License-Identifier: GNU Lesser General Public Version 2.1
 
+#include <deal.II/base/mpi.h>
+// Initialize MPI
+int    fake_argc = 0;
+char **fake_argv = nullptr;
+dealii::Utilities::MPI::MPI_InitFinalize
+  mpi_init(fake_argc, fake_argv, dealii::numbers::invalid_unsigned_int);
 #include "custom_pde.h"
 
 #include <prismspf/config.h>
@@ -39,8 +45,8 @@ main(int argc, char *argv[])
   try
     {
       // Initialize MPI
-      dealii::Utilities::MPI::MPI_InitFinalize
-        mpi_init(argc, argv, dealii::numbers::invalid_unsigned_int);
+      // dealii::Utilities::MPI::MPI_InitFinalize
+      //  mpi_init(argc, argv, dealii::numbers::invalid_unsigned_int);
 
       // Parse the command line options (if there are any) to get the name of the input
       // file
