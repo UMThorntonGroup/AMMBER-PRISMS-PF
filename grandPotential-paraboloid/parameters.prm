@@ -24,16 +24,16 @@ set Refine factor = 9
 set Mesh adaptivity = true
 
 set Max refinement level = 9
-set Min refinement level = 4
+set Min refinement level = 6
 
 set Steps between remeshing operations = 25
 
 # =================================================================================
 # Set the time step parameters
 # =================================================================================
-set Time step = 1.0e-3
+set Time step = 1.0e-1
 
-set Number of time steps = 10000
+set Number of time steps = 200000
 
 # =================================================================================
 # Set the output parameters
@@ -42,7 +42,7 @@ set Output condition = EQUAL_SPACING
 
 set Number of outputs = 100
 
-set Skip print steps = 50
+set Skip print steps = 100
 
 # =================================================================================
 # Set the boundary conditions
@@ -76,7 +76,7 @@ set Model constant r0 = 32.0, DOUBLE
 # Design factor (1/safety factor) for reccommending timestep.
 # A value in (0, 1), practically in [0.1, 0.8]
 # lower value -> more stable
-set Model constant time_scale_stability_factor = 0.5, DOUBLE
+set Model constant time_scale_stability_factor = 1.0, DOUBLE
 
 # Number of points in interface when automatically selecting length scale
 # n > 4 reccommended
