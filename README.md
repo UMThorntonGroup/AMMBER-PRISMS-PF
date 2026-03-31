@@ -73,6 +73,9 @@ following open source applications:
 # License:
 GNU Lesser General Public License (LGPL). Please see [LICENSE](LICENSE) for details.
 
+# Acknowledgement 
+This project is made possible by funding from the National Science Foundation (NSF) Award No. OAC-2209423
+
 # Links
 [AMMBER-PRISMS-PF Repository](https://github.com/UMThorntonGroup/AMMBER-PRISMS-PF) <br>
 [AMMBER_python Repository](https://github.com/UMThorntonGroup/AMMBER_python) <br>
