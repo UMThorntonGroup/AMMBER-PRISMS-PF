@@ -1,14 +1,11 @@
 #include "ParaboloidSystem.h"
 #include "SystemContainer.h"
 
-#include <core/matrixFreePDE.h>
 #include <fstream>
 #include <iomanip>
 #include <ios>
 #include <iostream>
 #include <string>
-
-using namespace dealii;
 
 template <int dim, int degree>
 class customPDE : public MatrixFreePDE<dim, degree>
@@ -33,74 +30,6 @@ public:
     print_interface_properties();
   }
 
-  // Function to set the initial conditions (in ICs_and_BCs.h)
-  void
-  setInitialCondition([[maybe_unused]] const Point<dim>  &p,
-                      [[maybe_unused]] const unsigned int index,
-                      [[maybe_unused]] double            &scalar_IC,
-                      [[maybe_unused]] Vector<double>    &vector_IC) override;
-
-  // Function to set the non-uniform Dirichlet boundary conditions (in
-  // ICs_and_BCs.h)
-  void
-  setNonUniformDirichletBCs([[maybe_unused]] const Point<dim>  &p,
-                            [[maybe_unused]] const unsigned int index,
-                            [[maybe_unused]] const unsigned int direction,
-                            [[maybe_unused]] const double       time,
-                            [[maybe_unused]] double            &scalar_BC,
-                            [[maybe_unused]] Vector<double>    &vector_BC) override;
-
-private:
-#include <core/typeDefs.h>
-
-  const userInputParameters<dim> userInputs;
-
-  // Function to set the RHS of the governing equations for explicit time
-  // dependent equations (in equations.h)
-  void
-  explicitEquationRHS(
-    [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>>
-                                                              &variable_list,
-    [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
-    [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
-
-  // Function to set the RHS of the governing equations for all other equations
-  // (in equations.h)
-  void
-  nonExplicitEquationRHS(
-    [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>>
-                                                              &variable_list,
-    [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
-    [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
-
-  // Function to set the LHS of the governing equations (in equations.h)
-  void
-  equationLHS(
-    [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>>
-                                                              &variable_list,
-    [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
-    [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
-
-  // Function to set postprocessing expressions
-  void
-  postProcessedFields(
-    [[maybe_unused]] const variableContainer<dim, degree, VectorizedArray<double>>
-      &variable_list,
-    [[maybe_unused]] variableContainer<dim, degree, VectorizedArray<double>>
-                                                              &pp_variable_list,
-    [[maybe_unused]] const Point<dim, VectorizedArray<double>> q_point_loc,
-    [[maybe_unused]] const VectorizedArray<double> element_volume) const override;
-
-// Function to set the nucleation probability (in nucleation.h)
-#ifdef NUCLEATION_FILE_EXISTS
-  double
-  getNucleationProbability([[maybe_unused]] variableValueContainer variable_value,
-                           [[maybe_unused]] double                 dV) const override;
-#endif
-
-  // ================================================================
-  // Methods specific to this subclass
-  // ================================================================
   /**
    * @brief Function to set the initial conditions with the proper tanh profile given a
    * level-set function
@@ -128,7 +57,7 @@ private:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
-            constV(0.), // detadt_field
+            constV(0.),       // detadt_field
             {}                // dhdeta
           }
         });
@@ -205,3 +134,64 @@ private:
   double r0 = userInputs.get_model_constant_double("r0");
   // ================================================================
 };
+
+// SPDX-FileCopyrightText: © 2025 PRISMS Center at the University of Michigan
+// SPDX-License-Identifier: GNU Lesser General Public Version 2.1
+
+#include <prismspf/core/pde_operator_base.h>
+
+PRISMS_PF_BEGIN_NAMESPACE
+
+template <unsigned int dim, unsigned int degree, typename number>
+class CustomPDE : public PDEOperatorBase<dim, degree, number>
+{
+public:
+  using ScalarValue = dealii::VectorizedArray<number>;
+  using ScalarGrad  = dealii::Tensor<1, dim, ScalarValue>;
+  using ScalarHess  = dealii::Tensor<2, dim, ScalarValue>;
+  using VectorValue = dealii::Tensor<1, dim, ScalarValue>;
+  using VectorGrad  = dealii::Tensor<2, dim, ScalarValue>;
+  using VectorHess  = dealii::Tensor<3, dim, ScalarValue>;
+  using PDEOperatorBase<dim, degree, number>::get_user_inputs;
+  using PDEOperatorBase<dim, degree, number>::get_pf_tools;
+
+  /**
+   * @brief Constructor.
+   */
+  CustomPDE(const UserInputParameters<dim> &_user_inputs, PhaseFieldTools<dim> &_pf_tools)
+    : PDEOperatorBase<dim, degree, number>(_user_inputs, _pf_tools)
+  {}
+
+private:
+  void
+  set_initial_condition([[maybe_unused]] const unsigned int       &index,
+                        [[maybe_unused]] const unsigned int       &component,
+                        [[maybe_unused]] const dealii::Point<dim> &point,
+                        [[maybe_unused]] number                   &scalar_value,
+                        [[maybe_unused]] number &vector_component_value) const override
+  {
+    const dealii::Tensor<1, dim> &mesh_size =
+      get_user_inputs().spatial_discretization.rectangular_mesh.size;
+
+    scalar_value = std::min(scalar_value, number(1.0));
+  }
+
+  void
+  compute_rhs(FieldContainer<dim, degree, number> &variable_list,
+              const SimulationTimer               &sim_timer,
+              unsigned int                         solve_block_id) const override
+  {
+    if (solve_block_id == 1) // explicit n
+      {
+        ScalarValue n_val  = variable_list.template get_value<Scalar, OldOne>(0);
+        ScalarGrad  n_grad = variable_list.template get_gradient<Scalar, OldOne>(0);
+        ScalarValue eq_n   = n_val - sim_timer.get_timestep() * m_well * f_well;
+        variable_list.set_value_term(0, eq_n);
+      }
+  }
+
+  number m_well;
+  number kappa;
+};
+
+PRISMS_PF_END_NAMESPACE
