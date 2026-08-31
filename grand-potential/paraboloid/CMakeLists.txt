@@ -28,6 +28,9 @@ find_package(
     $ENV{PRISMS_PF_DIR}
 )
 
+# Include the headers in this repo
+include_directories(${CMAKE_SOURCE_DIR}/../../include ${CMAKE_SOURCE_DIR}/../../vendor)
+
 # Declare the application executable
 add_executable(${APPLICATION_NAME})
 
@@ -44,7 +47,7 @@ target_sources(
   ${APPLICATION_NAME}
   PRIVATE
     main.cc
-    custom_pde.h
+    paraboloid_pde.h
 )
 
 # Require C++20
@@ -65,6 +68,7 @@ set_target_properties(
 target_link_libraries(
   ${APPLICATION_NAME}
   PRIVATE
-    $<$<CONFIG:Debug>:PRISMS-PF::prisms_pf_debug>
-    $<$<CONFIG:Release>:PRISMS-PF::prisms_pf_release>
+    $<IF:$<AND:$<CONFIG:Debug>,$<STREQUAL:${PRISMS_PF_BUILD_TYPE},DebugRelease>>,
+    PRISMS-PF::prisms_pf_debug,
+    PRISMS-PF::prisms_pf>
 )

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: © 2025 PRISMS Center at the University of Michigan
 // SPDX-License-Identifier: GNU Lesser General Public Version 2.1
 
-#include "custom_pde.h"
+#include "paraboloid_pde.h"
 
 #include <prismspf/core/parse_cmd_options.h>
 #include <prismspf/core/problem.h>

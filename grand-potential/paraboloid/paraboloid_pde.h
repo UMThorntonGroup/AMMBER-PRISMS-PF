@@ -1,10 +1,5 @@
-#include "ParaboloidSystem.h"
 #include "SystemContainer.h"
 
-#include <fstream>
-#include <iomanip>
-#include <ios>
-#include <iostream>
 #include <string>
 
 template <int dim, int degree>
@@ -12,7 +7,7 @@ class customPDE : public MatrixFreePDE<dim, degree>
 {
 public:
   // Constructor
-  customPDE(userInputParameters<dim> _userInputs)
+  customPDE(UserInputParameters<dim> _userInputs)
     : MatrixFreePDE<dim, degree>(_userInputs)
     , userInputs(_userInputs)
   {
