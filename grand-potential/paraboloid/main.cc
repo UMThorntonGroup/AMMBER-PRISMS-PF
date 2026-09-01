@@ -21,28 +21,10 @@ main(int argc, char *argv[])
   constexpr unsigned int dim    = 2;
   constexpr unsigned int degree = 1;
 
-  std::vector<FieldAttributes> field_attributes = {
-    FieldAttributes("n", Scalar),
-    FieldAttributes("mg_n", Scalar),
-    FieldAttributes("f_tot", Scalar),
-  };
+  ParaboloidSystem sys;
 
-  SolveBlock exp_block;
-  exp_block.id            = 1;
-  exp_block.solve_type    = Explicit;
-  exp_block.solve_timing  = Primary;
-  exp_block.field_indices = {0};
-  exp_block.dependencies_rhs =
-    make_dependency_set(field_attributes, {"old_1(n)", "grad(old_1(n))"});
-
-  SolveBlock pp_block;
-  pp_block.id               = 2;
-  pp_block.solve_type       = Explicit;
-  pp_block.solve_timing     = PostProcess;
-  pp_block.field_indices    = {1, 2};
-  pp_block.dependencies_rhs = make_dependency_set(field_attributes, {"n", "grad(n)"});
-
-  std::vector<SolveBlock> solve_blocks({exp_block, pp_block});
+  std::vector<FieldAttributes> field_attributes = sys.load_fields();
+  std::vector<SolveBlock>      solve_blocks     = sys.load_blocks();
 
   UserInputParameters<dim>       user_inputs(cli_options.get_parameters_filename());
   PhaseFieldTools<dim>           pf_tools;

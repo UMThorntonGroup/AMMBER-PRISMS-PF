@@ -1,4 +1,4 @@
-#include "SystemContainer.h"
+#include "system_equations.h"
 
 #include <string>
 
@@ -52,7 +52,7 @@ public:
           {
             {constV(1.), {}}, // eta
             {constV(0.), {}}, // detadt
-            constV(0.),       // detadt_field
+            constV(0.), // detadt_field
             {}                // dhdeta
           }
         });
@@ -150,6 +150,8 @@ public:
   using PDEOperatorBase<dim, degree, number>::get_user_inputs;
   using PDEOperatorBase<dim, degree, number>::get_pf_tools;
 
+  ParaboloidSystem sys;
+
   /**
    * @brief Constructor.
    */
@@ -176,12 +178,37 @@ private:
               const SimulationTimer               &sim_timer,
               unsigned int                         solve_block_id) const override
   {
-    if (solve_block_id == 1) // explicit n
+    SystemContainer<dim, degree, number> sys_container(sys, get_user_inputs());
+    if (solve_block_id == ParaboloidSystem::explicit_block_id)
       {
-        ScalarValue n_val  = variable_list.template get_value<Scalar, OldOne>(0);
-        ScalarGrad  n_grad = variable_list.template get_gradient<Scalar, OldOne>(0);
-        ScalarValue eq_n   = n_val - sim_timer.get_timestep() * m_well * f_well;
-        variable_list.set_value_term(0, eq_n);
+        sys_container.initialize_fields_explicit(variable_list);
+
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.calculate_dhdeta();
+        sys_container.calculate_local_mobility();
+        sys_container.calculate_dmudt();
+
+        sys_container.submit_fields_explicit(variable_list, sim_timer.get_timestep());
+      }
+    else if (solve_block_id == ParaboloidSystem::detadt_block_id)
+      {
+        sys_container.initialize_fields_nonexplicit(variable_list);
+
+        sys_container.calculate_omega_phase();
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.calculate_dhdeta();
+        sys_container.calculate_detadt();
+
+        sys_container.submit_fields_aux(variable_list);
+      }
+    else if (solve_block_id == ParaboloidSystem::pp_block_id)
+      {
+        sys_container.initialize_fields_postprocess(variable_list);
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.submit_fields_postprocess(variable_list);
       }
   }
 

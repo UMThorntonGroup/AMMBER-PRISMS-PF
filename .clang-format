@@ -57,7 +57,7 @@ BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
 BreakStringLiterals: true
 
-ColumnLimit: 90
+ColumnLimit: 110
 
 CompactNamespaces: false
 

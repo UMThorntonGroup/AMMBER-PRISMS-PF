@@ -108,60 +108,57 @@ public:
   /**
    * @brief Initialize the fields for the PDE
    * @param variable_list The variable list
-   * @param var_index The starting index for the block of fields
    */
   void
-  initialize_fields_explicit(const VarList &variable_list, uint &var_index)
+  initialize_fields_explicit(const VarList &variable_list)
   {
-    op_data.clear();
-    op_data.reserve(sys().order_params.size());
-    for (uint comp_index = 0; comp_index < sys().comp_names.size(); comp_index++)
+    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, OldOne>(var_index);
+          variable_list.template get_value<Scalar, OldOne>(sys().mu_base() + comp_index);
         comp_data[comp_index].mu.grad =
-          variable_list.template get_gradient<Scalar, OldOne>(var_index);
-        var_index++;
+          variable_list.template get_gradient<Scalar, OldOne>(sys().mu_base() + comp_index);
       }
-    for (const auto &phase_index : sys().order_params)
+    op_data.clear();
+    op_data.resize(sys().num_ops());
+    for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        OPData op;
-        op.eta.val      = variable_list.template get_value<Scalar, OldOne>(var_index);
-        op.eta.grad     = variable_list.template get_gradient<Scalar, OldOne>(var_index);
-        op.detadt_field = variable_list.template get_value<Scalar, OldOne>(
-          var_index + sys().order_params.size());
+        const uint phase_index  = sys().order_params[op_index];
+        OPData    &op           = op_data[op_index].second;
+        op_data[op_index].first = phase_index;
+        op.eta.val      = variable_list.template get_value<Scalar, OldOne>(sys().eta_base() + op_index);
+        op.eta.grad     = variable_list.template get_gradient<Scalar, OldOne>(sys().eta_base() + op_index);
+        op.detadt_field = variable_list.template get_value<Scalar, OldOne>(sys().detadt_base() + op_index);
         op.dhdeta.resize(sys().phases.size());
-        op_data.push_back({phase_index, op});
-        var_index++;
       }
   }
 
   /**
    * @brief Initialize the fields for the PDE
    * @param variable_list The variable list
-   * @param var_index The starting index for the block of fields
    */
   void
-  initialize_fields_nonexplicit(const VarList &variable_list, uint &var_index)
+  initialize_fields_aux(const VarList &variable_list)
   {
     op_data.clear();
-    op_data.reserve(sys().order_params.size());
-    for (uint comp_index = 0; comp_index < sys().comp_names.size(); comp_index++)
+    op_data.reserve(sys().num_ops());
+    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, OldOne>(var_index);
+          variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
         comp_data[comp_index].mu.grad =
-          variable_list.template get_gradient<Scalar, OldOne>(var_index);
-        var_index++;
+          variable_list.template get_gradient<Scalar, Current>(sys().mu_base() + comp_index);
       }
-    for (const auto &phase_index : sys().order_params)
+    op_data.clear();
+    op_data.resize(sys().num_ops());
+    for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        OPData op;
-        op.eta.val  = variable_list.template get_value<Scalar, OldOne>(var_index);
-        op.eta.grad = variable_list.template get_gradient<Scalar, OldOne>(var_index);
+        const uint phase_index  = sys().order_params[op_index];
+        OPData    &op           = op_data[op_index].second;
+        op_data[op_index].first = phase_index;
+        op.eta.val  = variable_list.template get_value<Scalar, Current>(sys().eta_base() + op_index);
+        op.eta.grad = variable_list.template get_gradient<Scalar, Current>(sys().eta_base() + op_index);
         op.dhdeta.resize(sys().phases.size());
-        op_data.push_back({phase_index, op});
-        var_index++;
       }
   }
 
@@ -177,8 +174,7 @@ public:
     op_data.reserve(sys().order_params.size());
     for (uint comp_index = 0; comp_index < sys().comp_names.size(); comp_index++)
       {
-        comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, OldOne>(var_index);
+        comp_data[comp_index].mu.val = variable_list.template get_value<Scalar, OldOne>(var_index);
         var_index++;
       }
     for (const auto &phase_index : sys().order_params)
@@ -204,11 +200,9 @@ public:
         phase.omega.val                           = phase_info.f_min;
         for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
           {
-            const CompData                        &comp = comp_data.at(comp_index);
-            const ParaboloidSystem::PhaseCompInfo &comp_info =
-              phase_info.comps.at(comp_index);
-            phase.omega +=
-              -comp.mu * comp.mu / (2.0 * comp_info.k_well) - comp.mu * comp_info.c_min;
+            const CompData                        &comp      = comp_data.at(comp_index);
+            const ParaboloidSystem::PhaseCompInfo &comp_info = phase_info.comps.at(comp_index);
+            phase.omega += -comp.mu * comp.mu / (2.0 * comp_info.k_well) - comp.mu * comp_info.c_min;
           }
       }
   }
@@ -284,9 +278,8 @@ public:
               {
                 continue; // Skip self-interaction
               }
-            double mu_ab =
-              2.0 * (sys().phases[alpha_index].mu_int * sys().phases[beta_index].mu_int) /
-              (sys().phases[alpha_index].mu_int + sys().phases[beta_index].mu_int);
+            double mu_ab = 2.0 * (sys().phases[alpha_index].mu_int * sys().phases[beta_index].mu_int) /
+                           (sys().phases[alpha_index].mu_int + sys().phases[beta_index].mu_int);
             double L_ab = 4.0 * mu_ab / sys().l_int / 3.0;
             L += L_ab * (op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val);
             sum_pair_sq_eta += op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val;
@@ -302,9 +295,8 @@ public:
 
         // Interface term
         ScalarVariation interface_term;
-        interface_term.val =
-          m * (op.eta.val * op.eta.val * op.eta.val - op.eta.val +
-               2. * 1.5 * op.eta.val * (sum_sq_eta.val - op.eta.val * op.eta.val));
+        interface_term.val = m * (op.eta.val * op.eta.val * op.eta.val - op.eta.val +
+                                  2. * 1.5 * op.eta.val * (sum_sq_eta.val - op.eta.val * op.eta.val));
         interface_term.vec = -kappa * op.eta.grad;
 
         // Chemical term
@@ -371,8 +363,7 @@ public:
             for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
               {
                 auto &comp_info = sys().phases.at(beta_index).comps.at(comp_index);
-                dcdeta_sum += op.dhdeta.at(beta_index) *
-                              (comp.mu / comp_info.k_well + comp_info.c_min);
+                dcdeta_sum += op.dhdeta.at(beta_index) * (comp.mu / comp_info.k_well + comp_info.c_min);
               }
             comp.dmudt -= dcdeta_sum.val * op.detadt_field;
           }
@@ -402,25 +393,18 @@ public:
    * @param var_index The starting index for the block of fields
    */
   void
-  submit_fields(VarList &variable_list, uint &var_index)
+  submit_fields_explicit(VarList &variable_list, double dt)
   {
-    for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
+    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         CompData &comp = comp_data[comp_index];
-        variable_list.set_scalar_value_term_RHS(var_index,
-                                                comp.mu.val +
-                                                  comp.dmudt.val * userInputs->dtValue);
-        variable_list.set_scalar_gradient_term_RHS(var_index,
-                                                   -comp.dmudt.vec * userInputs->dtValue);
-        var_index++;
+        variable_list.set_value_term(sys().mu_base() + comp_index, comp.mu.val + comp.dmudt.val * dt);
+        variable_list.set_gradient_term(sys().mu_base() + comp_index, -comp.dmudt.vec * dt);
       }
-    for (auto &[phase_index, op] : op_data)
+    for (uint op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        variable_list.set_scalar_value_term_RHS(var_index,
-                                                op.eta.val +
-                                                  op.detadt_field * userInputs->dtValue);
-        variable_list.set_scalar_gradient_term_RHS(var_index, ScalarGrad());
-        var_index++;
+        const auto &[phase_index, op] = op_data[op_index];
+        variable_list.set_value_term(sys().eta_base() + op_index, op.eta.val + op.detadt_field * dt);
       }
   }
 
@@ -430,15 +414,13 @@ public:
    * @param var_index The starting index for the block of fields
    */
   void
-  submit_aux_fields(VarList &variable_list, uint &var_index)
+  submit_fields_aux(VarList &variable_list)
   {
-    var_index += comp_data.size(); // Skip the mu fields
-    var_index += op_data.size();   // Skip the op fields
-    for (auto &[phase_index, op] : op_data)
+    for (uint op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        variable_list.set_scalar_value_term_RHS(var_index, op.detadt.val);
-        variable_list.set_scalar_gradient_term_RHS(var_index, -op.detadt.vec);
-        var_index++;
+        const auto &[phase_index, op] = op_data[op_index];
+        variable_list.set_value_term(sys().detadt_base() + op_index, op.detadt.val);
+        variable_list.set_gradient_term(sys().detadt_base() + op_index, -op.detadt.vec);
       }
   }
 
@@ -448,9 +430,9 @@ public:
    * @param pp_index The starting index for the block of fields
    */
   void
-  submit_pp_fields(VarList &pp_variable_list, uint &pp_index)
+  submit_fields_postprocess(VarList &variable_list)
   {
-    for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
+    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         CompData   &comp = comp_data[comp_index];
         ScalarValue c    = dealii::make_vectorized_array(0.);
@@ -462,8 +444,7 @@ public:
             c += phase.h.val * comp_info.c_min;
             c += phase.h.val * comp.mu.val / comp_info.k_well;
           }
-        pp_variable_list.set_scalar_value_term_RHS(pp_index, c);
-        pp_index++;
+        variable_list.set_value_term(sys().c_base() + comp_index, c);
       }
   }
 };
