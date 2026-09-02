@@ -430,11 +430,11 @@ public:
     SolveBlock detadt;
     SolveBlock pp;
 
-    for (uint var_index = mu_base(); var_index < num_comps(); var_index++)
+    for (uint var_index = mu_base(); var_index < mu_base() + num_comps(); var_index++)
       {
         mu_and_eta.field_indices.insert(var_index);
       }
-    for (uint var_index = eta_base(); var_index < num_ops(); var_index++)
+    for (uint var_index = eta_base(); var_index < eta_base() + num_ops(); var_index++)
       {
         mu_and_eta.field_indices.insert(var_index);
       }

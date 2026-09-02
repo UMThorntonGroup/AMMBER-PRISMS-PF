@@ -23,6 +23,12 @@ main(int argc, char *argv[])
   using number                  = double;
 
   ParaboloidSystem sys;
+  std::ifstream    file("system.json");
+  if (!file.is_open())
+    throw std::runtime_error("Could not open system.json");
+  nlohmann::json model_parameters;
+  file >> model_parameters;
+  sys.from_json(model_parameters);
 
   std::vector<FieldAttributes> field_attributes = sys.load_fields();
   std::vector<SolveBlock>      solve_blocks     = sys.load_blocks();

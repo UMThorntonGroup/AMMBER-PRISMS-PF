@@ -42,7 +42,7 @@ private:
   {
     const dealii::Tensor<1, dim> &mesh_size = get_user_inputs().spatial_discretization.rectangular_mesh.size;
 
-    scalar_value = std::min(scalar_value, number(1.0));
+    scalar_value = 0.0;
   }
 
   void
