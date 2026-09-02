@@ -20,6 +20,7 @@ main(int argc, char *argv[])
 
   constexpr unsigned int dim    = 2;
   constexpr unsigned int degree = 1;
+  using number                  = double;
 
   ParaboloidSystem sys;
 
@@ -28,12 +29,8 @@ main(int argc, char *argv[])
 
   UserInputParameters<dim>       user_inputs(cli_options.get_parameters_filename());
   PhaseFieldTools<dim>           pf_tools;
-  CustomPDE<dim, degree, double> pde_operator(user_inputs, pf_tools);
-  Problem<dim, degree, double>   problem(field_attributes,
-                                       solve_blocks,
-                                       user_inputs,
-                                       pf_tools,
-                                       pde_operator);
+  CustomPDE<dim, degree, number> pde_operator(user_inputs, pf_tools, sys);
+  Problem<dim, degree, number>   problem(field_attributes, solve_blocks, user_inputs, pf_tools, pde_operator);
   problem.solve();
 
   return 0;

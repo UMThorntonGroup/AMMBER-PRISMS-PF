@@ -6,7 +6,7 @@
 
 #include "paraboloid_system.h"
 
-#include <FieldContainer.h>
+#include <auto_diff.h>
 #include <memory>
 #include <prismspf/core/field_container.h>
 #include <prismspf/user_inputs/user_input_parameters.h>
@@ -26,7 +26,7 @@ public:
   using ScalarGrad      = dealii::Tensor<1, dim, ScalarValue>;
   using ScalarField     = Dual<ScalarValue, dim>;
   using ScalarVariation = Variation<ScalarValue, dim>;
-  using VarList         = FieldContainer<dim, degree, ScalarValue>;
+  using VarList         = FieldContainer<dim, degree, number>;
 
   /**
    * @brief Data structure to hold the phase data
@@ -168,22 +168,21 @@ public:
    * @param var_index The starting index for the block of fields
    */
   void
-  initialize_fields_postprocess(const VarList &variable_list, uint &var_index)
+  initialize_fields_postprocess(const VarList &variable_list)
   {
     op_data.clear();
     op_data.reserve(sys().order_params.size());
-    for (uint comp_index = 0; comp_index < sys().comp_names.size(); comp_index++)
+    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
-        comp_data[comp_index].mu.val = variable_list.template get_value<Scalar, OldOne>(var_index);
-        var_index++;
+        comp_data[comp_index].mu.val =
+          variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
       }
-    for (const auto &phase_index : sys().order_params)
+    for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        OPData op;
-        op.eta.val = variable_list.template get_value<Scalar, OldOne>(var_index);
+        const uint phase_index = sys().order_params[op_index];
+        OPData    &op          = op_data[op_index].second;
+        op.eta.val = variable_list.template get_value<Scalar, Current>(sys().eta_base() + op_index);
         op.dhdeta.resize(sys().phases.size());
-        op_data.push_back({phase_index, op});
-        var_index++;
       }
   }
 
@@ -444,7 +443,7 @@ public:
             c += phase.h.val * comp_info.c_min;
             c += phase.h.val * comp.mu.val / comp_info.k_well;
           }
-        variable_list.set_value_term(sys().c_base() + comp_index, c);
+        variable_list.set_value_term(sys().c_tot_base() + comp_index, c);
       }
   }
 };

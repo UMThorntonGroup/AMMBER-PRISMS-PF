@@ -9,6 +9,7 @@
 #include <prismspf/core/field_attributes.h>
 #include <prismspf/core/solve_block.h>
 #include <string>
+
 using namespace prismspf;
 
 struct Scales
@@ -157,8 +158,8 @@ public:
     order_params.clear();
     for (const std::string phase_name : j.at("order_parameters"))
       {
-        uint phase_index = std::find(phase_names.begin(), phase_names.end(), phase_name) -
-                           phase_names.begin();
+        uint phase_index =
+          std::find(phase_names.begin(), phase_names.end(), phase_name) - phase_names.begin();
         order_params.push_back(phase_index);
       }
 
@@ -184,8 +185,7 @@ public:
       {
         for (const auto &comp : phase.comps)
           {
-            minimum_diagonal_curvature =
-              std::min(minimum_diagonal_curvature, comp.k_well);
+            minimum_diagonal_curvature = std::min(minimum_diagonal_curvature, comp.k_well);
           }
       }
     return minimum_diagonal_curvature;
@@ -204,8 +204,7 @@ public:
     for (const auto &phase : phases)
       {
         max_gradient_coefficient = std::max(max_gradient_coefficient, phase.D);
-        max_gradient_coefficient =
-          std::max(max_gradient_coefficient, phase.mu_int * phase.sigma);
+        max_gradient_coefficient = std::max(max_gradient_coefficient, phase.mu_int * phase.sigma);
       }
     return max_gradient_coefficient;
   }
@@ -245,16 +244,16 @@ public:
     const int line_width = 45;
 
     // Print header
-    std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width)
-              << "Dimensionless" << std::setw(col_width) << "Dimensional"
+    std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width) << "Dimensionless"
+              << std::setw(col_width) << "Dimensional"
               << "\n";
     std::cout << std::string(line_width, '-') << "\n";
 
     // Print Vm and l_int
-    std::cout << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm
-              << std::setw(col_width) << Vm << "\n";
-    std::cout << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int
-              << std::setw(col_width) << l_int << "\n";
+    std::cout << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm << std::setw(col_width) << Vm
+              << "\n";
+    std::cout << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int << std::setw(col_width)
+              << l_int << "\n";
 
     // Print component information
     for (const auto &comp_name : comp_names)
@@ -267,22 +266,21 @@ public:
     for (const Phase &phase : phases)
       {
         std::cout << std::setw(col_width) << phase.name << "\n";
-        std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width)
-                  << phase.mu_int << std::setw(col_width) << phase.mu_int << "\n";
-        std::cout << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D
-                  << std::setw(col_width) << phase.D << "\n";
-        std::cout << std::setw(col_width) << "sigma:" << std::setw(col_width)
-                  << phase.sigma << std::setw(col_width) << phase.sigma << "\n";
+        std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width) << phase.mu_int
+                  << std::setw(col_width) << phase.mu_int << "\n";
+        std::cout << std::setw(col_width) << "D:" << std::setw(col_width) << phase.D << std::setw(col_width)
+                  << phase.D << "\n";
+        std::cout << std::setw(col_width) << "sigma:" << std::setw(col_width) << phase.sigma
+                  << std::setw(col_width) << phase.sigma << "\n";
 
         for (const PhaseCompInfo &comp : phase.comps)
           {
             std::cout << std::setw(col_width) << comp.name << "\n";
-            std::cout << std::setw(col_width) << "k_well:" << std::setw(col_width)
-                      << comp.k_well << std::setw(col_width) << comp.k_well << "\n";
-            std::cout << std::setw(col_width) << "c_min:" << std::setw(col_width)
-                      << comp.c_min << std::setw(col_width) << comp.c_min << "\n";
-            std::cout << std::setw(col_width) << "x0:" << std::setw(col_width) << comp.x0
-                      << "\n";
+            std::cout << std::setw(col_width) << "k_well:" << std::setw(col_width) << comp.k_well
+                      << std::setw(col_width) << comp.k_well << "\n";
+            std::cout << std::setw(col_width) << "c_min:" << std::setw(col_width) << comp.c_min
+                      << std::setw(col_width) << comp.c_min << "\n";
+            std::cout << std::setw(col_width) << "x0:" << std::setw(col_width) << comp.x0 << "\n";
           }
         std::cout << "\n";
       }
@@ -304,8 +302,7 @@ public:
     for (const unsigned int &phase_index : order_params)
       {
         std::string phase_name = phase_names[phase_index];
-        std::string var_name =
-          phase_name + "_" + std::to_string(phase_counter[phase_index]++);
+        std::string var_name   = phase_name + "_" + std::to_string(phase_counter[phase_index]++);
         op_names.push_back(var_name);
       }
     return op_names;
@@ -425,10 +422,8 @@ public:
   {
     static const Dependency old_1_val_and_grad(EvalFlags::nothing,
                                                EvalFlags::nothing,
-                                               {EvalFlags::values |
-                                                EvalFlags::gradients});
-    static const Dependency current_val_and_grad(EvalFlags::values |
-                                                 EvalFlags::gradients);
+                                               {EvalFlags::values | EvalFlags::gradients});
+    static const Dependency current_val_and_grad(EvalFlags::values | EvalFlags::gradients);
     static const Dependency current_val(EvalFlags::values);
 
     SolveBlock mu_and_eta;
@@ -443,13 +438,11 @@ public:
       {
         mu_and_eta.field_indices.insert(var_index);
       }
-    for (uint var_index = detadt_base(); var_index < detadt_base() + num_ops();
-         var_index++)
+    for (uint var_index = detadt_base(); var_index < detadt_base() + num_ops(); var_index++)
       {
         detadt.field_indices.insert(var_index);
       }
-    for (uint var_index = c_tot_base(); var_index < c_tot_base() + num_comps();
-         var_index++)
+    for (uint var_index = c_tot_base(); var_index < c_tot_base() + num_comps(); var_index++)
       {
         pp.field_indices.insert(var_index);
       }
@@ -483,6 +476,18 @@ public:
       }
 
     return std::vector<SolveBlock>({mu_and_eta, detadt, pp});
+  }
+
+  /**
+   * @brief Function to set the initial conditions with the proper tanh profile given a
+   * level-set function
+   */
+  template <typename number>
+  [[nodiscard]] auto
+  interface(const number &sdf) const
+  {
+    using std::tanh;
+    return 0.5 * (1.0 + tanh(2.0 * sdf / l_int));
   }
 };
 
