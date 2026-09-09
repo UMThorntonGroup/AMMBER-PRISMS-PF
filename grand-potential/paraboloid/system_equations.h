@@ -61,11 +61,7 @@ public:
   /**
    * @brief Pointer to the system parameters
    */
-  std::shared_ptr<const ParaboloidSystem> sys_ptr;
-  /**
-   * @brief Pointer to the PRISMS-PF parameters
-   */
-  std::shared_ptr<const UserInputParameters<dim>> userInputs;
+  const ParaboloidSystem *sys_ptr;
 
   /**
    * @brief Values associated with each phase
@@ -88,11 +84,10 @@ public:
    * Constructor
    */
   SystemContainer(const ParaboloidSystem &_sys, const UserInputParameters<dim> &inputs)
-    : sys_ptr(std::make_shared<const ParaboloidSystem>(_sys))
-    , userInputs(std::make_shared<const UserInputParameters<dim>>(inputs))
-    , phase_data(std::vector<PhaseData>(sys().phases.size()))
-    , comp_data(std::vector<CompData>(sys().comp_names.size()))
-    , op_data({})
+    : sys_ptr(&_sys)
+    , phase_data(sys().phases.size())
+    , comp_data(sys().num_comps())
+    , op_data(sys().num_ops())
     , sum_sq_eta({})
   {}
 
@@ -119,8 +114,6 @@ public:
         comp_data[comp_index].mu.grad =
           variable_list.template get_gradient<Scalar, OldOne>(sys().mu_base() + comp_index);
       }
-    op_data.clear();
-    op_data.resize(sys().num_ops());
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
         const uint phase_index  = sys().order_params[op_index];
@@ -147,8 +140,6 @@ public:
         comp_data[comp_index].mu.grad =
           variable_list.template get_gradient<Scalar, Current>(sys().mu_base() + comp_index);
       }
-    op_data.clear();
-    op_data.resize(sys().num_ops());
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
         const uint phase_index  = sys().order_params[op_index];
@@ -168,8 +159,6 @@ public:
   void
   initialize_fields_postprocess(const VarList &variable_list)
   {
-    op_data.clear();
-    op_data.resize(sys().num_ops());
     for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         comp_data[comp_index].mu.val =

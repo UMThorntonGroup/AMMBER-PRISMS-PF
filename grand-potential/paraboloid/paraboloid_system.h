@@ -365,7 +365,8 @@ public:
   size_t
   eta_base() const
   {
-    return mu_base() + num_comps();
+    return num_comps();
+    // return mu_base() + num_comps();
   }
 
   /**
@@ -375,7 +376,8 @@ public:
   size_t
   detadt_base() const
   {
-    return eta_base() + num_ops();
+    return num_comps() + num_ops();
+    // return eta_base() + num_ops();
   }
 
   /**
@@ -385,7 +387,8 @@ public:
   size_t
   c_tot_base() const
   {
-    return detadt_base() + num_ops();
+    return num_comps() + 2 * num_ops();
+    // return detadt_base() + num_ops();
   }
 
   static constexpr unsigned int explicit_block_id = 0;

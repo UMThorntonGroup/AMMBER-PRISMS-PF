@@ -4,11 +4,11 @@ subsection Rectangular mesh
   set y size = 128
 end
 
-set global refinement = 7
-set max refinement    = 7
+set global refinement = 8
+set max refinement    = 8
 set min refinement    = 4
 set mesh adaptivity   = true
-set remeshing period  = 100
+set remeshing period  = 1000
 
 set time step = 1.0e-3
 set num_steps = 10000
