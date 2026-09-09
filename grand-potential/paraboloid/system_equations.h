@@ -7,7 +7,6 @@
 #include "paraboloid_system.h"
 
 #include <auto_diff.h>
-#include <memory>
 #include <prismspf/core/field_container.h>
 #include <prismspf/user_inputs/user_input_parameters.h>
 
@@ -253,7 +252,9 @@ public:
   calculate_detadt()
   {
     // Calculate the local interface mobility
-    ScalarValue L               = ScalarValue(0.0);
+    ScalarValue m(0.0);
+    ScalarValue kappa(0.0);
+    ScalarValue L(0.0);
     ScalarValue sum_pair_sq_eta = ScalarValue(0.0);
     // ScalarValue sq_sum_sq_eta   = sum_sq_eta.val * sum_sq_eta.val;
     for (const auto &[alpha_index, op1] : op_data)
@@ -266,18 +267,23 @@ public:
               }
             double mu_ab = 2.0 * (sys().phases[alpha_index].mu_int * sys().phases[beta_index].mu_int) /
                            (sys().phases[alpha_index].mu_int + sys().phases[beta_index].mu_int);
-            double L_ab = 4.0 * mu_ab / sys().l_int / 3.0;
-            L += L_ab * (op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val);
-            sum_pair_sq_eta += op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val;
+            double      L_ab     = 4.0 * mu_ab / sys().l_int / 3.0;
+            double      sigma_ab = 0.5 * (sys().phases[alpha_index].sigma + sys().phases[beta_index].sigma);
+            double      m_ab     = 6.00 * sigma_ab / sys().l_int;
+            double      kappa_ab = 0.75 * sigma_ab * sys().l_int;
+            ScalarValue pair_sq_eta = op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val;
+            L += L_ab * pair_sq_eta;
+            m += m_ab * pair_sq_eta;
+            kappa += kappa_ab * pair_sq_eta;
+            sum_pair_sq_eta += pair_sq_eta;
           }
       }
     L /= 2.0 * sum_pair_sq_eta + 1.0e-8;
+    m /= 2.0 * sum_pair_sq_eta + 1.0e-8;
+    kappa /= 2.0 * sum_pair_sq_eta + 1.0e-8;
     for (auto &[alpha_index, op] : op_data)
       {
         const ParaboloidSystem::Phase &phase_info = sys().phases.at(alpha_index);
-
-        double m     = 6.00 * phase_info.sigma / sys().l_int;
-        double kappa = 0.75 * phase_info.sigma * sys().l_int;
 
         // Interface term
         ScalarVariation interface_term;
@@ -306,7 +312,7 @@ public:
     for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
       {
         CompData &comp = comp_data[comp_index];
-        comp.M         = dealii::make_vectorized_array(0.);
+        comp.M         = 0.0;
         for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
           {
             PhaseData &phase = phase_data[phase_index];
