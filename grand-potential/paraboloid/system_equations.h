@@ -53,7 +53,7 @@ public:
   {
     ScalarField              eta;
     ScalarVariation          detadt;
-    ScalarValue              detadt_field = dealii::make_vectorized_array(0.);
+    ScalarValue              detadt_field = 0.0;
     std::vector<ScalarField> dhdeta;
   };
 
@@ -198,7 +198,7 @@ public:
   void
   calculate_sum_sq_eta()
   {
-    sum_sq_eta.val = dealii::make_vectorized_array(0.);
+    sum_sq_eta.val = 0.0;
     for (const auto &[phase_index, op] : op_data)
       {
         sum_sq_eta += op.eta * op.eta;
@@ -234,7 +234,7 @@ public:
           {
             PhaseData   &beta   = phase_data[beta_index];
             ScalarField &dhdeta = op.dhdeta[beta_index];
-            dhdeta.val          = dealii::make_vectorized_array(0.);
+            dhdeta.val          = 0.0;
             if (alpha_index == beta_index)
               {
                 dhdeta += 2.0 * op.eta;
@@ -345,7 +345,7 @@ public:
           }
 
         // Flux term
-        comp.dmudt.val = dealii::make_vectorized_array(0.);
+        comp.dmudt.val = 0.0;
         comp.dmudt.vec = -comp.M * -comp.mu.grad;
 
         // Partitioning term
@@ -427,7 +427,7 @@ public:
     for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         CompData   &comp = comp_data[comp_index];
-        ScalarValue c    = dealii::make_vectorized_array(0.);
+        ScalarValue c(0.0);
         for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
           {
             const PhaseData                       &phase = phase_data.at(phase_index);

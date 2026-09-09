@@ -22,7 +22,7 @@ main(int argc, char *argv[])
 
   constexpr unsigned int dim    = 2;
   constexpr unsigned int degree = 1;
-  using number                  = double;
+  using number                  = float;
 
   ParaboloidSystem sys;
   std::ifstream    file("system.json");
