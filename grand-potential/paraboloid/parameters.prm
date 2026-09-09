@@ -4,8 +4,8 @@ subsection Rectangular mesh
   set y size = 128
 end
 
-set global refinement = 9
-set max refinement    = 9
+set global refinement = 7
+set max refinement    = 7
 set min refinement    = 4
 set mesh adaptivity   = true
 set remeshing period  = 100
@@ -30,10 +30,10 @@ set Model constant r0 = 32.0, DOUBLE
 # Set the automatic parameter selection constants
 # =================================================================================
 
-# Design factor (1/safety factor) for reccommending timestep.
-# A value in (0, 1), practically in [0.1, 0.8]
+# Design factor for timestep.
+# A value in (0, 1), practically in [0.1, 0.5]
 # lower value -> more stable
-set Model constant time_scale_stability_factor = 0.5, DOUBLE
+set Model constant stability_factor = 0.5, DOUBLE
 
 # Number of points in interface when automatically selecting length scale
 # n > 4 reccommended

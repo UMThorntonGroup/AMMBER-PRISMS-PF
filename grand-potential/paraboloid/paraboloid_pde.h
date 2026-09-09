@@ -5,7 +5,7 @@
 PRISMS_PF_BEGIN_NAMESPACE
 
 template <unsigned int dim, unsigned int degree, typename number>
-class CustomPDE : public PDEOperatorBase<dim, degree, number>
+class GrandPotentialPDE : public PDEOperatorBase<dim, degree, number>
 {
 public:
   using ScalarValue = dealii::VectorizedArray<number>;
@@ -25,30 +25,17 @@ public:
   /**
    * @brief Constructor.
    */
-  CustomPDE(const UserInputParameters<dim> &_user_inputs,
-            PhaseFieldTools<dim>           &_pf_tools,
-            const ParaboloidSystem         &_sys)
+  GrandPotentialPDE(const UserInputParameters<dim> &_user_inputs,
+                    PhaseFieldTools<dim>           &_pf_tools,
+                    const ParaboloidSystem         &_sys)
     : PDEOperatorBase<dim, degree, number>(_user_inputs, _pf_tools)
     , sys(_sys)
   {}
 
-private:
-  void
-  set_initial_condition([[maybe_unused]] const unsigned int       &index,
-                        [[maybe_unused]] const unsigned int       &component,
-                        [[maybe_unused]] const dealii::Point<dim> &point,
-                        [[maybe_unused]] number                   &scalar_value,
-                        [[maybe_unused]] number                   &vector_component_value) const override
-  {
-    const dealii::Tensor<1, dim> &mesh_size = get_user_inputs().spatial_discretization.rectangular_mesh.size;
-
-    scalar_value = 0.0;
-  }
-
   void
   compute_rhs(FieldContainer<dim, degree, number> &variable_list,
               const SimulationTimer               &sim_timer,
-              unsigned int                         solve_block_id) const override
+              unsigned int                         solve_block_id) const override final
   {
     SystemContainer<dim, degree, number> sys_container(sys, get_user_inputs());
     if (solve_block_id == ParaboloidSystem::explicit_block_id)

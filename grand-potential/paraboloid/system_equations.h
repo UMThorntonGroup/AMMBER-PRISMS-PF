@@ -140,8 +140,6 @@ public:
   void
   initialize_fields_aux(const VarList &variable_list)
   {
-    op_data.clear();
-    op_data.reserve(sys().num_ops());
     for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         comp_data[comp_index].mu.val =
@@ -171,7 +169,7 @@ public:
   initialize_fields_postprocess(const VarList &variable_list)
   {
     op_data.clear();
-    op_data.reserve(sys().order_params.size());
+    op_data.resize(sys().num_ops());
     for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
       {
         comp_data[comp_index].mu.val =

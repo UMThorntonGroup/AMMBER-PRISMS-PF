@@ -329,6 +329,16 @@ public:
   }
 
   /**
+   * @brief  Get number of phases
+   * @return The number of phases
+   */
+  size_t
+  num_phases() const
+  {
+    return phase_names.size();
+  }
+
+  /**
    * @brief Get number of order parameters
    * @return The number of order parameters
    */
