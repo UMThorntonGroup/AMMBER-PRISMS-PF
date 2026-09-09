@@ -315,9 +315,11 @@ public:
         comp.M         = 0.0;
         for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
           {
-            PhaseData &phase = phase_data[phase_index];
-            comp.M += sys().phases.at(phase_index).D * phase.h.val /
-                      (sys().phases.at(phase_index).comps.at(comp_index).k_well);
+            const auto &phase_info = sys().phases.at(phase_index);
+            const auto &comp_info  = phase_info.comps.at(comp_index);
+            PhaseData  &phase      = phase_data[phase_index];
+            ScalarValue c_phase    = comp_info.c_min + comp.mu.val / comp_info.k_well;
+            comp.M += phase_info.D * c_phase * phase.h.val / (comp_info.k_well);
           }
       }
   }
