@@ -79,9 +79,10 @@ public:
     // ---------------------------------------------------------------------
 
     // Submit the fields
-    var_index = 0;
+
     for (uint comp_index = 0; comp_index < sys.num_comps(); comp_index++)
       {
+        var_index = sys.mu_base() + comp_index;
         if (index == var_index)
           {
             double mu0 = 0.;
@@ -94,15 +95,17 @@ public:
                 eta_index++;
               }
             scalar_value = mu0;
+            return;
           }
-        var_index++;
       }
+    var_index = sys.eta_base();
     eta_index = 0;
     for ([[maybe_unused]] const auto &phase_name : sys.order_params)
       {
         if (index == op_index[eta_index])
           {
             scalar_value = eta0[eta_index];
+            return;
           }
         eta_index++;
         var_index++;

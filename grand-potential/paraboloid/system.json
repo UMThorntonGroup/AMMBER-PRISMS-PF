@@ -5,41 +5,44 @@
         "energy_density_scale": 0.0
     },
     "convert_fractional_to_volumetric_energy": false,
-    "solution_component": "TA",
+    "solution_component": "FE",
     "components": [
-        "CU"
+        "C"
     ],
     "Vm": 1.0,
-    "l_int": 2.0,
+    "l_int": 1.0e-6,
     "phases": {
-        "SOLID": {
-            "mu_int": 10.0,
-            "D": 1.0,
-            "sigma": 1.0,
-            "f_min": 0.0,
-            "CU": {
-                "k_well": 1.0,
-                "c_min": 0.8,
-                "x0": 0.8
+        "alpha": {
+            "mu_int": 1.0e-10,
+            "D": 1.5638e-12,
+            "sigma": 0.7,
+            "f_min": -6.16e8,
+            "C": {
+                "k_well": 1.608e12,
+                "c_min": 0.00165013,
+                "x0": 0.0065
             }
         },
-        "LIQUID": {
-            "mu_int": 10.0,
-            "D": 1.0,
-            "sigma": 1.0,
-            "f_min": 0.0,
-            "CU": {
-                "k_well": 0.5,
-                "c_min": 0.1,
-                "x0": 0.5
+        "gamma": {
+            "mu_int": 1.0e-10,
+            "D": 2.106e-10,
+            "sigma": 0.7,
+            "f_min": -6.41e8,
+            "C": {
+                "k_well": 5.17e10,
+                "c_min": 0.0339212,
+                "x0": 0.0339
             }
         }
     },
     "order_parameters": [
-        "LIQUID",
-        "SOLID"
+        "alpha",
+        "gamma"
     ],
     "comments": [
-        "none yet"
+        "T = 1063 K",
+        "0.0018 C alpha eq composition",
+        "0.0339 C gamma eq composition",
+        "0.0065 C initial composition"
     ]
 }

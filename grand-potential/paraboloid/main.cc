@@ -41,8 +41,9 @@ main(int argc, char *argv[])
   TemporalDiscretization     &time  = user_inputs.temporal_discretization;
 
   // Choose the timestep automatically based on the CFL condition
-  double dx = space.rectangular_mesh.size[0] / double(1 << space.global_refinement);
-  time.dt   = 0.5 * prismspf::cfl_timestep<dim, degree>(sys.max_gradient_coefficient(), dx);
+  const double dx               = space.rectangular_mesh.size[0] / double(1 << space.global_refinement);
+  const double stability_factor = user_inputs.user_constants.get_double("stability_factor");
+  time.dt = stability_factor * prismspf::cfl_timestep<dim, degree>(sys.max_gradient_coefficient(), dx);
   Logger::instance() << "Set dt = " << time.dt << "\n";
 
   // Set up refinement criteria for the order parameters

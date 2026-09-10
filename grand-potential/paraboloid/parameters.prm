@@ -1,11 +1,11 @@
 
 subsection Rectangular mesh
-  set x size = 128
-  set y size = 128
+  set x size = 100e-6
+  set y size = 100e-6
 end
 
-set global refinement = 8
-set max refinement    = 8
+set global refinement = 9
+set max refinement    = 9
 set min refinement    = 4
 set mesh adaptivity   = true
 set remeshing period  = 1000
@@ -16,7 +16,7 @@ set num_steps = 10000
 subsection output
   set condition = EQUAL_SPACING
   set number    = 100
-  #set list = 1,2,3,4,5,6,7,8,9
+  set list = 1,2,3,4,5,6,7,8,9
 end
 
 # =================================================================================
@@ -24,7 +24,7 @@ end
 # =================================================================================
 
 # Particle radius
-set Model constant r0 = 32.0, DOUBLE
+set Model constant r0 = 5e-6, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants
@@ -33,7 +33,7 @@ set Model constant r0 = 32.0, DOUBLE
 # Design factor for timestep.
 # A value in (0, 1), practically in [0.1, 0.5]
 # lower value -> more stable
-set Model constant stability_factor = 0.5, DOUBLE
+set Model constant stability_factor = 0.05, DOUBLE
 
 # Number of points in interface when automatically selecting length scale
 # n > 4 reccommended

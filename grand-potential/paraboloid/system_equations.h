@@ -165,8 +165,9 @@ public:
       }
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
-        const uint phase_index = sys().order_params[op_index];
-        OPData    &op          = op_data[op_index].second;
+        const uint phase_index  = sys().order_params[op_index];
+        op_data[op_index].first = phase_index;
+        OPData &op              = op_data[op_index].second;
         op.eta.val = variable_list.template get_value<Scalar, Current>(sys().eta_base() + op_index);
         op.dhdeta.resize(sys().phases.size());
       }
@@ -430,7 +431,7 @@ public:
       {
         CompData   &comp = comp_data[comp_index];
         ScalarValue c(0.0);
-        for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
+        for (uint phase_index = 0; phase_index < sys().num_phases(); phase_index++)
           {
             const PhaseData                       &phase = phase_data.at(phase_index);
             const ParaboloidSystem::PhaseCompInfo &comp_info =
