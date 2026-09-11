@@ -10,7 +10,7 @@
         "C"
     ],
     "Vm": 1.0,
-    "l_int": 1.0e-6,
+    "l_int": 4.0e-9,
     "phases": {
         "alpha": {
             "mu_int": 1.0e-10,

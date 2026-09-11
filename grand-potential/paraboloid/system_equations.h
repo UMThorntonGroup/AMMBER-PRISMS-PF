@@ -279,9 +279,9 @@ public:
             sum_pair_sq_eta += pair_sq_eta;
           }
       }
-    L /= 2.0 * sum_pair_sq_eta + 1.0e-8;
-    m /= 2.0 * sum_pair_sq_eta + 1.0e-8;
-    kappa /= 2.0 * sum_pair_sq_eta + 1.0e-8;
+    L /= sum_pair_sq_eta + 1.0e-12;
+    m /= sum_pair_sq_eta + 1.0e-12;
+    kappa /= sum_pair_sq_eta + 1.0e-12;
     for (auto &[alpha_index, op] : op_data)
       {
         const ParaboloidSystem::Phase &phase_info = sys().phases.at(alpha_index);

@@ -79,7 +79,7 @@ public:
     // ---------------------------------------------------------------------
 
     // Submit the fields
-
+    const double sum_sq_eta = sum_sq(eta0) + 1e-8;
     for (uint comp_index = 0; comp_index < sys.num_comps(); comp_index++)
       {
         var_index = sys.mu_base() + comp_index;
@@ -90,8 +90,8 @@ public:
             for (const auto &phase_index : sys.order_params)
               {
                 auto &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
-                mu0 +=
-                  eta0[eta_index] * phase_comp_info.k_well * (phase_comp_info.x0 - phase_comp_info.c_min);
+                mu0 += eta0[eta_index] * eta0[eta_index] / sum_sq_eta * phase_comp_info.k_well *
+                       (phase_comp_info.x0 - phase_comp_info.c_min);
                 eta_index++;
               }
             scalar_value = mu0;
@@ -124,6 +124,20 @@ public:
                 [[maybe_unused]] const SimulationTimer    &sim_timer,
                 [[maybe_unused]] number                   &scalar_value,
                 [[maybe_unused]] number                   &vector_component_value) const override; */
+
+  template <typename vectorType>
+  auto
+  sum_sq(const vectorType &vec) const
+  {
+    decltype(vec[0] * vec[0]) sum = 0.0;
+    for (unsigned int i = 0; i < vec.size(); i++)
+
+      {
+        const auto &val = vec[i];
+        sum += val * val;
+      }
+    return sum;
+  }
 };
 
 PRISMS_PF_END_NAMESPACE
