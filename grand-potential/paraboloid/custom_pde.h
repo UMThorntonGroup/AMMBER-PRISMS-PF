@@ -91,7 +91,7 @@ public:
               {
                 auto &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
                 mu0 += eta0[eta_index] * eta0[eta_index] / sum_sq_eta * phase_comp_info.k_well *
-                       (phase_comp_info.x0 - phase_comp_info.c_min);
+                       (phase_comp_info.c0 - phase_comp_info.c_min);
                 eta_index++;
               }
             scalar_value = mu0;

@@ -39,7 +39,8 @@ public:
   struct PhaseCompInfo
   {
     std::string name;
-    double      k_well, c_min, x0;
+    double      k_well, c_min, c0;
+    double      dk_well = 0.0, dc_min = 0.0;
   };
 
   /**
@@ -52,6 +53,8 @@ public:
     double                     D;
     double                     sigma;
     double                     f_min;
+    double                     df_min = 0.0;
+    double                     T_ref  = 0.0;
     std::vector<PhaseCompInfo> comps;
   };
 
@@ -84,10 +87,9 @@ public:
    */
   double l_int;
   /**
-   * @brief If true, the energy density is converted to volumetric energy density from
-   * molar/atomic energy
+   * @brief Whether to consider temperature dependence in the model
    */
-  bool volumetrize;
+  bool temperature_dependent = false;
 
   /**
    * @brief Constructor
@@ -116,7 +118,7 @@ public:
     l_int = j.at("l_int").get<double>();
 
     // Check if volumetrization needed
-    volumetrize = j.at("convert_fractional_to_volumetric_energy").get<bool>();
+    bool volumetrize = j.at("convert_fractional_to_volumetric_energy").get<bool>();
 
     // Parse solution component
     solution_component = j.at("solution_component").get<std::string>();
@@ -139,15 +141,20 @@ public:
         phase_info.at("sigma").get_to(phase.sigma);
         phase_info.at("f_min").get_to(phase.f_min);
         phase_info.at("D").get_to(phase.D);
+        phase.df_min = phase_info.value("df_min", 0.0);
+        phase.T_ref  = phase_info.value("T_ref", 0.0);
 
         // Parse components
         for (const std::string &comp_name : comp_names)
           {
             PhaseCompInfo phaseCompInfo;
-            phaseCompInfo.name = comp_name;
-            phase_info.at(comp_name).at("c_min").get_to(phaseCompInfo.c_min);
-            phase_info.at(comp_name).at("k_well").get_to(phaseCompInfo.k_well);
-            phase_info.at(comp_name).at("x0").get_to(phaseCompInfo.x0);
+            phaseCompInfo.name    = comp_name;
+            const auto &comp_info = phase_info.at(comp_name);
+            comp_info.at("c_min").get_to(phaseCompInfo.c_min);
+            comp_info.at("k_well").get_to(phaseCompInfo.k_well);
+            comp_info.at("c0").get_to(phaseCompInfo.c0);
+            phaseCompInfo.dc_min  = comp_info.value("dc_min", 0.0);
+            phaseCompInfo.dk_well = comp_info.value("dk_well", 0.0);
             phase.comps.push_back(phaseCompInfo);
           }
         phases.push_back(phase);
@@ -280,7 +287,7 @@ public:
                       << std::setw(col_width) << comp.k_well << "\n";
             std::cout << std::setw(col_width) << "c_min:" << std::setw(col_width) << comp.c_min
                       << std::setw(col_width) << comp.c_min << "\n";
-            std::cout << std::setw(col_width) << "x0:" << std::setw(col_width) << comp.x0 << "\n";
+            std::cout << std::setw(col_width) << "c0:" << std::setw(col_width) << comp.c0 << "\n";
           }
         std::cout << "\n";
       }

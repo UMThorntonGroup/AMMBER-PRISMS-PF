@@ -11,7 +11,7 @@ set mesh adaptivity   = true
 set remeshing period  = 500
 
 set time step = 1.0e-3
-set num_steps = 1000000
+set num_steps = 10000000
 
 subsection output
   set condition = EQUAL_SPACING

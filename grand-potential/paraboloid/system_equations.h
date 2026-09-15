@@ -320,7 +320,7 @@ public:
             const auto &comp_info  = phase_info.comps.at(comp_index);
             PhaseData  &phase      = phase_data[phase_index];
             ScalarValue c_phase    = comp_info.c_min + comp.mu.val / comp_info.k_well;
-            comp.M += phase_info.D * c_phase * phase.h.val / (comp_info.k_well);
+            comp.M += phase_info.D * c_phase * phase.h.val / comp_info.k_well;
           }
       }
   }
@@ -385,7 +385,7 @@ public:
   /**
    * @brief Submit the fields to PRISMS-PF
    * @param variable_list The PRISMS-PF variable list
-   * @param var_index The starting index for the block of fields
+   * @param dt The timestep
    */
   void
   submit_fields_explicit(VarList &variable_list, double dt)
@@ -421,8 +421,7 @@ public:
 
   /**
    * @brief Submit the post-processed fields to PRISMS-PF
-   * @param pp_variable_list The PRISMS-PF variable list
-   * @param pp_index The starting index for the block of fields
+   * @param variable_list The PRISMS-PF variable list
    */
   void
   submit_fields_postprocess(VarList &variable_list)
