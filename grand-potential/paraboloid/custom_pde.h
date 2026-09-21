@@ -85,15 +85,18 @@ public:
         var_index = sys.mu_base() + comp_index;
         if (index == var_index)
           {
-            double mu0 = 0.;
-            eta_index  = 0;
+            double mu0          = 0.0;
+            double k_inv_interp = 0.0;
+            eta_index           = 0;
             for (const auto &phase_index : sys.order_params)
               {
                 auto &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
-                mu0 += eta0[eta_index] * eta0[eta_index] / sum_sq_eta * phase_comp_info.k_well *
+                mu0 += (eta0[eta_index] * eta0[eta_index] / sum_sq_eta) *
                        (phase_comp_info.c0 - phase_comp_info.c_min);
+                k_inv_interp += (eta0[eta_index] * eta0[eta_index] / sum_sq_eta) / phase_comp_info.k_well;
                 eta_index++;
               }
+            mu0 /= k_inv_interp;
             scalar_value = mu0;
             return;
           }

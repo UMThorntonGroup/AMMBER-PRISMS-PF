@@ -3,12 +3,28 @@
 
 #include "custom_pde.h"
 
+#include <limits>
 #include <prismspf/core/parse_cmd_options.h>
 #include <prismspf/core/problem.h>
+#include <prismspf/user_inputs/spatial_discretization.h>
 #include <prismspf/utilities/logger.h>
 #include <prismspf/utilities/utilities.h>
 
 using namespace prismspf;
+
+template <unsigned int dim>
+double
+get_min_dx(const SpatialDiscretization<dim> &space)
+{
+  double dx = std::numeric_limits<double>::max();
+  for (unsigned int d = 0; d < dim; d++)
+    {
+      dx = std::min(dx,
+                    space.rectangular_mesh.size[d] / space.rectangular_mesh.subdivisions[d] /
+                      double(1 << space.global_refinement));
+    }
+  return dx;
+}
 
 int
 main(int argc, char *argv[])
@@ -41,7 +57,7 @@ main(int argc, char *argv[])
   TemporalDiscretization     &time  = user_inputs.temporal_discretization;
 
   // Choose the timestep automatically based on the CFL condition
-  const double dx               = space.rectangular_mesh.size[0] / double(1 << space.global_refinement);
+  const double dx               = get_min_dx(space);
   const double stability_factor = user_inputs.user_constants.get_double("stability_factor");
   time.dt = stability_factor * prismspf::cfl_timestep<dim, degree>(sys.max_gradient_coefficient(), dx);
   Logger::instance() << "Set dt = " << time.dt << "\n";
