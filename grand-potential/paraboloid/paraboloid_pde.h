@@ -1,3 +1,5 @@
+#include <deal.II/base/exceptions.h>
+
 #include "system_equations.h"
 
 #include <prismspf/core/pde_operator_base.h>
@@ -69,6 +71,61 @@ public:
         sys_container.calculate_h();
         sys_container.submit_fields_postprocess(variable_list);
       }
+  }
+
+  /**
+   * @brief Given the order parameter values provided in `eta_0`,
+   * submit the initial values and compositions to PRISMS-PF
+   */
+  void
+  submit_ic_from_fields(const std::vector<number> &eta_0,
+                        const unsigned int        &index,
+                        number                    &scalar_value) const
+  {
+    Assert(eta_0.size() == sys.num_ops(), dealii::ExcMessage("Order parameter vector is incorrect size!"));
+    const double sum_sq_eta = sum_sq(eta_0) + 1e-8;
+    for (uint comp_index = 0; comp_index < sys.num_comps(); comp_index++)
+      {
+        unsigned int var_index = sys.mu_base() + comp_index;
+        if (index == var_index)
+          {
+            double mu0          = 0.0;
+            double k_inv_interp = 0.0;
+            for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
+              {
+                unsigned int phase_index     = sys.order_params[op_index];
+                auto        &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
+                mu0 += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) *
+                       (phase_comp_info.c0 - phase_comp_info.c_min);
+                k_inv_interp += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) / phase_comp_info.k_well;
+              }
+            mu0 /= k_inv_interp;
+            scalar_value = mu0;
+            return;
+          }
+      }
+    for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
+      {
+        if (index == sys.eta_base() + op_index)
+          {
+            scalar_value = eta_0[op_index];
+            return;
+          }
+      }
+  }
+
+  template <typename vectorType>
+  auto
+  sum_sq(const vectorType &vec) const
+  {
+    decltype(vec[0] * vec[0]) sum = 0.0;
+    for (unsigned int i = 0; i < vec.size(); i++)
+
+      {
+        const auto &val = vec[i];
+        sum += val * val;
+      }
+    return sum;
   }
 
   /**

@@ -1,5 +1,7 @@
 
 subsection Rectangular mesh
+  set x lower bound = -200e-9
+  set y lower bound = -200e-9
   set x size = 400e-9
   set y size = 400e-9
 end
@@ -11,7 +13,7 @@ set mesh adaptivity   = true
 set remeshing period  = 500
 
 set time step = 1.0e-3
-set num_steps = 10000000
+set num_steps = 1000000
 
 subsection output
   set condition = EQUAL_SPACING
