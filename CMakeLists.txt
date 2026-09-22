@@ -43,6 +43,9 @@ target_link_libraries(
 )
 
 # Install Instructions
+# Include standard layout paths (defines CMAKE_INSTALL_INCLUDEDIR, CMAKE_INSTALL_LIBDIR, etc.)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
 
 # Define where the CMake config files will be installed
 set(PROJECT_CONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}")
@@ -56,10 +59,6 @@ install(TARGETS ammber
     EXPORT ${PROJECT_NAME}Targets
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-
-# Include standard layout paths (defines CMAKE_INSTALL_INCLUDEDIR, CMAKE_INSTALL_LIBDIR, etc.)
-include(GNUInstallDirs)
-include(CMakePackageConfigHelpers)
 
 ## Generate the version file (ensures find_package can check version constraints)
 #write_basic_package_version_file(
