@@ -8,20 +8,21 @@ cmake_policy(VERSION 3.25)
 # Create a project for the application
 project(AMMBER CXX)
 
-# Find the PRISMS-PF package
-#find_package(
-#  PRISMS-PF
-#  REQUIRED
-#  HINTS
-#    ${PRISMS_PF_DIR}
-#    $ENV{PRISMS_PF_DIR}
-#)
 
 # Define the header-only library as an INTERFACE target
 add_library(ammber INTERFACE)
 
 # Add an alias so it can be used like an installed package locally
 add_library(AMMBER::ammber ALIAS ammber)
+
+# Find the PRISMS-PF package
+find_package(
+  PRISMS-PF
+  REQUIRED
+  HINTS
+    ${PRISMS_PF_DIR}
+    $ENV{PRISMS_PF_DIR}
+)
 
 # Include the headers in this repo
 target_include_directories(ammber INTERFACE
@@ -33,13 +34,13 @@ target_include_directories(ammber INTERFACE
 # Require C++20
 target_compile_features(ammber INTERFACE cxx_std_20)
 
-#target_link_libraries(
-#  ammber
-#  INTERFACE
-#    $<IF:$<AND:$<CONFIG:Debug>,$<STREQUAL:${PRISMS_PF_BUILD_TYPE},DebugRelease>>,
-#    PRISMS-PF::prisms_pf_debug,
-#    PRISMS-PF::prisms_pf>
-#)
+target_link_libraries(
+  ammber
+  INTERFACE
+    $<IF:$<AND:$<CONFIG:Debug>,$<STREQUAL:${PRISMS_PF_BUILD_TYPE},DebugRelease>>,
+    PRISMS-PF::prisms_pf_debug,
+    PRISMS-PF::prisms_pf>
+)
 
 # Install Instructions
 

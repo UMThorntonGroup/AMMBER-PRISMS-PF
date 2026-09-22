@@ -19,15 +19,6 @@ endif()
 # Export compile commands for IDEs
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Find the PRISMS-PF package
-find_package(
-  PRISMS-PF
-  REQUIRED
-  HINTS
-    ${PRISMS_PF_DIR}
-    $ENV{PRISMS_PF_DIR}
-)
-
 # Find the AMMBER package
 find_package(
   AMMBER
@@ -73,8 +64,5 @@ set_target_properties(
 target_link_libraries(
   ${APPLICATION_NAME}
   PRIVATE
-    $<IF:$<AND:$<CONFIG:Debug>,$<STREQUAL:${PRISMS_PF_BUILD_TYPE},DebugRelease>>,
-    PRISMS-PF::prisms_pf_debug,
-    PRISMS-PF::prisms_pf>
     AMMBER::ammber
 )
