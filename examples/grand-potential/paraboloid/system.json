@@ -1,0 +1,48 @@
+{
+    "dimensions": {
+        "length_scale": 0.0,
+        "time_scale": 0.0,
+        "energy_density_scale": 0.0
+    },
+    "convert_fractional_to_volumetric_energy": false,
+    "solution_component": "FE",
+    "components": [
+        "C"
+    ],
+    "Vm": 1.0,
+    "l_int": 4.0e-9,
+    "phases": {
+        "alpha": {
+            "mu_int": 1.0e-10,
+            "D": 1.5638e-12,
+            "sigma": 0.7,
+            "f_min": -6.16e8,
+            "C": {
+                "k_well": 1.608e12,
+                "c_min": 0.00165013,
+                "c0": 0.0065
+            }
+        },
+        "gamma": {
+            "mu_int": 1.0e-10,
+            "D": 2.106e-10,
+            "sigma": 0.7,
+            "f_min": -6.41e8,
+            "C": {
+                "k_well": 5.17e10,
+                "c_min": 0.0339212,
+                "c0": 0.0339
+            }
+        }
+    },
+    "order_parameters": [
+        "alpha",
+        "gamma"
+    ],
+    "comments": [
+        "T = 1063 K",
+        "0.0018 C alpha eq composition",
+        "0.0339 C gamma eq composition",
+        "0.0065 C initial composition"
+    ]
+}

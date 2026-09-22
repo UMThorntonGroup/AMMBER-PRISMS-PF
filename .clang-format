@@ -57,7 +57,7 @@ BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
 BreakStringLiterals: true
 
-ColumnLimit: 90
+ColumnLimit: 110
 
 CompactNamespaces: false
 
@@ -76,12 +76,15 @@ FixNamespaceComments: true
 
 IncludeBlocks:   Regroup
 IncludeCategories:
-  # customPDE.h in main.cc must always be first
-  - Regex:    '"customPDE.h"'
-    Priority:       -1
+  # ammber first
+  - Regex:    '<ammber*>'
+    Priority:       1
+  # prismspf next
+  - Regex:    '<prismspf*>'
+    Priority:       2
   # deal.II headers:
   - Regex:    '<deal.II.*>'
-    Priority:       1
+    Priority:       3
   # boost headers:
   - Regex:    '<boost.*>'
     Priority:       9

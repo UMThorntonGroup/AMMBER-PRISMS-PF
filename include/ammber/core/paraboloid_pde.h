@@ -1,0 +1,205 @@
+#include <deal.II/base/exceptions.h>
+
+#include <ammber/core/system_equations.h>
+#include <prismspf/core/pde_operator_base.h>
+
+PRISMS_PF_BEGIN_NAMESPACE
+
+template <unsigned int dim, unsigned int degree, typename number>
+class GrandPotentialPDE : public PDEOperatorBase<dim, degree, number>
+{
+public:
+  using ScalarValue = dealii::VectorizedArray<number>;
+  using ScalarGrad  = dealii::Tensor<1, dim, ScalarValue>;
+  using ScalarHess  = dealii::Tensor<2, dim, ScalarValue>;
+  using VectorValue = dealii::Tensor<1, dim, ScalarValue>;
+  using VectorGrad  = dealii::Tensor<2, dim, ScalarValue>;
+  using VectorHess  = dealii::Tensor<3, dim, ScalarValue>;
+  using PDEOperatorBase<dim, degree, number>::get_user_inputs;
+  using PDEOperatorBase<dim, degree, number>::get_pf_tools;
+
+  /**
+   * @brief Object containing the thermodynamic and kinetic parameters
+   */
+  ParaboloidSystem sys;
+
+  /**
+   * @brief Constructor.
+   */
+  GrandPotentialPDE(const UserInputParameters<dim> &_user_inputs,
+                    PhaseFieldTools<dim>           &_pf_tools,
+                    const ParaboloidSystem         &_sys)
+    : PDEOperatorBase<dim, degree, number>(_user_inputs, _pf_tools)
+    , sys(_sys)
+  {}
+
+  void
+  compute_rhs(FieldContainer<dim, degree, number> &variable_list,
+              const SimulationTimer               &sim_timer,
+              unsigned int                         solve_block_id) const override final
+  {
+    SystemContainer<dim, degree, number> sys_container(sys, get_user_inputs());
+    if (solve_block_id == ParaboloidSystem::explicit_block_id)
+      {
+        sys_container.initialize_fields_explicit(variable_list);
+
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.calculate_dhdeta();
+        sys_container.calculate_local_mobility();
+        sys_container.calculate_dmudt();
+
+        sys_container.submit_fields_explicit(variable_list, sim_timer.get_timestep());
+      }
+    else if (solve_block_id == ParaboloidSystem::detadt_block_id)
+      {
+        sys_container.initialize_fields_aux(variable_list);
+
+        sys_container.calculate_omega_phase();
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.calculate_dhdeta();
+        sys_container.calculate_detadt();
+
+        sys_container.submit_fields_aux(variable_list);
+      }
+    else if (solve_block_id == ParaboloidSystem::pp_block_id)
+      {
+        sys_container.initialize_fields_postprocess(variable_list);
+        sys_container.calculate_sum_sq_eta();
+        sys_container.calculate_h();
+        sys_container.submit_fields_postprocess(variable_list);
+      }
+  }
+
+  /**
+   * @brief Given the order parameter values provided in `eta_0`,
+   * submit the initial values and compositions to PRISMS-PF
+   */
+  void
+  submit_ic_from_fields(const std::vector<number> &eta_0,
+                        const unsigned int        &index,
+                        number                    &scalar_value) const
+  {
+    Assert(eta_0.size() == sys.num_ops(), dealii::ExcMessage("Order parameter vector is incorrect size!"));
+    const double sum_sq_eta = sum_sq(eta_0) + 1e-8;
+    for (uint comp_index = 0; comp_index < sys.num_comps(); comp_index++)
+      {
+        unsigned int var_index = sys.mu_base() + comp_index;
+        if (index == var_index)
+          {
+            double mu0          = 0.0;
+            double k_inv_interp = 0.0;
+            for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
+              {
+                unsigned int phase_index     = sys.order_params[op_index];
+                auto        &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
+                mu0 += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) *
+                       (phase_comp_info.c0 - phase_comp_info.c_min);
+                k_inv_interp += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) / phase_comp_info.k_well;
+              }
+            mu0 /= k_inv_interp;
+            scalar_value = mu0;
+            return;
+          }
+      }
+    for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
+      {
+        if (index == sys.eta_base() + op_index)
+          {
+            scalar_value = eta_0[op_index];
+            return;
+          }
+      }
+  }
+
+  template <typename vectorType>
+  auto
+  sum_sq(const vectorType &vec) const
+  {
+    decltype(vec[0] * vec[0]) sum = 0.0;
+    for (unsigned int i = 0; i < vec.size(); i++)
+
+      {
+        const auto &val = vec[i];
+        sum += val * val;
+      }
+    return sum;
+  }
+
+  /**
+   * @brief Prints the grand potential densities (nondimensionalized) of each phase at
+   * its initial conditions
+   */
+  void
+  print_initial_energies()
+  {
+    /**
+     * @brief Map of the initial grand potential densities for each phase (used for
+     * printing)
+     */
+    /* std::map<std::string, double> initial_omega;
+    std::cout << "Initial omega free energies:\n";
+    for (uint phase_index = 0; phase_index < sys.phases.size(); phase_index++)
+      {
+        const ParaboloidSystem::Phase       &phase = sys.phases.at(phase_index);
+        SystemContainer<dim, degree, number> sys_for_print(sys);
+        sys_for_print.op_data.push_back({
+          phase_index,
+          {
+            {ScalarValue(1.0), {}}, // eta
+            {ScalarValue(0.0), {}}, // detadt
+            ScalarValue(0.0),       // detadt_field
+            {}                      // dhdeta
+          }
+        });
+
+        for (uint comp_index = 0; comp_index < sys.comp_names.size(); comp_index++)
+          {
+            const ParaboloidSystem::PhaseCompInfo &comp_info = phase.comps.at(comp_index);
+            double                                 mu0 = comp_info.k_well * (comp_info.c0 - comp_info.c_min);
+            sys_for_print.comp_data[comp_index].mu.val = ScalarValue(mu0);
+          }
+        sys_for_print.calculate_omega_phase();
+
+        std::cout << phase.name << ":\n"
+                  << "Omega:\t" << sys_for_print.phase_data[phase_index].omega.val[0] << "\n";
+        initial_omega[phase.name] = sys_for_print.phase_data[phase_index].omega.val[0];
+        for (uint comp_index = 0; comp_index < sys.comp_names.size(); comp_index++)
+          {
+            const ParaboloidSystem::PhaseCompInfo &comp = phase.comps.at(comp_index);
+            std::cout << "mu_" << comp.name << ":\t" << sys_for_print.comp_data[comp_index].mu.val[0] << "\n";
+          }
+        std::cout << "\n";
+      } */
+  }
+
+  /**
+   * @brief Function to print the properties of the interface between two phases at
+   * initial conditions
+   */
+  /*   void
+    print_interface_properties()
+    {
+      for (const auto &alpha : sys.phases)
+        {
+          for (const auto &beta : sys.phases)
+            {
+              std::cout << "Properties of the interface between " << alpha.name << " and " << beta.name
+                        << ":\n";
+              double delta_g = initial_omega[alpha.name] - initial_omega[beta.name];
+              double sigma   = 0.5 * (alpha.sigma + beta.sigma);
+              double D       = 0.5 * (alpha.D * beta.D) / (alpha.D + beta.D);
+              double mu_int  = 0.5 * (alpha.mu_int * beta.mu_int) / (alpha.mu_int + beta.mu_int);
+              std::cout << "The value of the dimensionless number delta_g/(sigma/l_int) is "
+                        << delta_g * sys.l_int / sigma << "\n";
+              std::cout << "The value of the dimensionless number delta_g*mu_int*l_int/D is "
+                        << delta_g * mu_int * sys.l_int / D << "\n";
+              std::cout << "The value of the dimensionless number sigma*mu_int/D is " << sigma * mu_int / D
+                        << "\n\n";
+            }
+        }
+    } */
+};
+
+PRISMS_PF_END_NAMESPACE
