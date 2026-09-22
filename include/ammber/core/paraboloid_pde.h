@@ -1,7 +1,6 @@
 #include <deal.II/base/exceptions.h>
 
-#include "system_equations.h"
-
+#include <ammber/core/system_equations.h>
 #include <prismspf/core/pde_operator_base.h>
 
 PRISMS_PF_BEGIN_NAMESPACE

@@ -4,11 +4,12 @@
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
-#include <json.hpp>
 #include <map>
+#include <nlohmann/json.hpp>
 #include <prismspf/core/field_attributes.h>
 #include <prismspf/core/solve_block.h>
 #include <string>
+
 
 using namespace prismspf;
 

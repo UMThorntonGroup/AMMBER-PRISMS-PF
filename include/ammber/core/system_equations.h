@@ -4,9 +4,8 @@
 #include <deal.II/base/tensor.h>
 #include <deal.II/base/vectorization.h>
 
-#include "paraboloid_system.h"
-
-#include <auto_diff.h>
+#include <ammber/core/paraboloid_system.h>
+#include <ammber/utilities/auto_diff.h>
 #include <prismspf/core/field_container.h>
 #include <prismspf/user_inputs/user_input_parameters.h>
 

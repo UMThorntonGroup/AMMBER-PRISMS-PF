@@ -28,8 +28,14 @@ find_package(
     $ENV{PRISMS_PF_DIR}
 )
 
-# Include the headers in this repo
-include_directories(${CMAKE_SOURCE_DIR}/../../include ${CMAKE_SOURCE_DIR}/../../vendor)
+# Find the AMMBER package
+find_package(
+  AMMBER
+  REQUIRED
+  HINTS
+    ${AMMBER_DIR}
+    $ENV{AMMBER_DIR}
+)
 
 # Declare the application executable
 add_executable(${APPLICATION_NAME})
@@ -47,7 +53,6 @@ target_sources(
   ${APPLICATION_NAME}
   PRIVATE
     main.cc
-    paraboloid_pde.h
 )
 
 # Require C++20
@@ -71,4 +76,5 @@ target_link_libraries(
     $<IF:$<AND:$<CONFIG:Debug>,$<STREQUAL:${PRISMS_PF_BUILD_TYPE},DebugRelease>>,
     PRISMS-PF::prisms_pf_debug,
     PRISMS-PF::prisms_pf>
+    AMMBER::ammber
 )
