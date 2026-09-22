@@ -20,27 +20,21 @@ AMMBER-PRISMS-PF Features:
 
 ### Install:
 AMMBER-PRISMS-PF can be installed on Linux and MacOS. <br>
-In the terminal, clone this repository and its submodule, and navigate inside.
+1. Install [PRISMS-PF](https://github.com/prisms-center/phaseField). For more information on installing PRISMS-PF and its dependencies, see [PRISMS-PF installation instructions](https://prisms-center.github.io/phaseField/doxygen/install.html).
+
+2. Install AMMBER-PRISMS-PF 
+First, set an installation path
 ```bash
-git clone --recurse-submodules https://github.com/UMThorntonGroup/AMMBER-PRISMS-PF.git
+# In your .rc or .profile file
+export AMMBER_DIR='/path/to/where/to/install'
+```
+In the terminal, clone this repository, navigate inside, and install with cmake.
+```bash
+git clone https://github.com/UMThorntonGroup/AMMBER-PRISMS-PF.git
 cd AMMBER-PRISMS-PF
+cmake -B build
+cmake --install build --prefix=$AMMBER_DIR
 ```
-If you have already cloned the repository without the submodule, you can run
-```bash
-git submodule update --init --recursive
-```
-to initialize it.
-
-Next, you will need to install the PRISMS-PF library included as a submodule.
-For more information on installing PRISMS-PF and its dependencies, see https://prisms-center.github.io/phaseField/doxygen/install.html.
-
-If you already have the dependencies installed, you can run
-```bash
-cd phaseField
-cmake .
-make -j <nprocs>
-```
-or simply, `make`.
 
 #### Recommended: Install [AMMBER_python](https://github.com/UMThorntonGroup/AMMBER_python)
 ```bash
@@ -51,13 +45,13 @@ pip install ammber
 Each application in this suite has a more detailed README, explaining how to use each model. PRISMS-PF also has [documentation](https://prisms-center.github.io/phaseField/doxygen/app_structure.html) explaining the requirements of an app.
 To run an application without any modifications, you just need to navigate to the application directory and compile first. For example:
 ```bash
-cd grandPotential-paraboloid
-cmake .
-make -j <nprocs>
+cd examples/grand-potential/paraboloid
+cmake -B release -DCMAKE_BUILD_TYPE=Release
+cmake --build release
 ```
 Next, you can run the simulation in parallel using
 ```bash
-mpirun -n <nprocs> ./main
+mpirun -n <nprocs> release/main
 ```
 (nprocs=8 for most desktops) or just `./main` for serial.
 

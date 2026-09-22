@@ -10,7 +10,6 @@
 #include <prismspf/core/solve_block.h>
 #include <string>
 
-
 using namespace prismspf;
 
 struct Scales
