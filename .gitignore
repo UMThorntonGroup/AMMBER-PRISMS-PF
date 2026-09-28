@@ -1,126 +1,32 @@
-# Build files & folders
-build/*
-CMakeFiles/
-CMakeCache.txt
-*.cmake
-!cmake/*.cmake
+# Build & Install files
+**/build
+**/install
+**/CMakeFiles
+**/__cmake_systeminformation
 Makefile
-.ninja*
-build.ninja
-
-# Config files
-include/config.h
-*.project
-*.cproject
-*.DS_Store
+cmake_install.cmake
+CMakeUserPresets.json
+CMakeCache.txt
 
 # IDE files
-*.vscode/*
-.clangd
+**/.cache
+**/.clangd
+**/.vscode
+**/.venv
+**/venv
 compile_commands.json
 
-# Python virtual environments
-.venv/*
-*.venv/
-
-# Clang-tidy
-output.txt
-error.txt
-
-# Compressed Libraries
-*.zip
-*.tar.gz
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-*.pbs
-main-debug
-main
-generate-bc-amr
-
-#Output files
-applications/*/*.vtk
+# Output files
+*.log
 *.vtu
 *.pvtu
-*.vts
-*.frt
-integratedFields.txt
-output.txt
-error.txt
-CTestCostData.txt
+*.vtk
+frames
 
-# Checkpoint/restart files
-restart.*
-restart.mesh
-restart.mesh.old
-restart.mesh.info
-restart.mesh.info.old
-restart.time.info
-restart.time.info.old
+# Executables
+main
+main-release
+main-debug
 
-#Temporary files
-*~
-*#
-*.#
-*.btr
-.*vtu*
-
-# Misc
-visitlog.py
-DoxygenWarningLog.txt
-
-#Tex files
-*.aux
-*.glo
-*.idx
-*.log
-*.toc
-*.ist
-*.acn
-*.acr
-*.alg
-*.bbl
-*.blg
-*.dvi
-*.glg
-*.gls
-*.ilg
-*.ind
-*.lof
-*.lot
-*.maf
-*.mtc
-*.mtc1
-*.out
-*.synctex.gz
-*.fdb_latexmk
-*.fls
-*.nav
-*.snm
-*.nlo
-
-# Doxygen
-doc/doxygen/html/*
-doc/doxygen/latex/*
-doc/doxygen/Doxyfile.doc_doxygen
-doc/doxygen/CMakeDoxyfile.in
-doc/doxygen/DoxygenWarningLog.txt
+# Mac
+.DS_Store
