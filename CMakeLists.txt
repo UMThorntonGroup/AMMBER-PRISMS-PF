@@ -8,7 +8,6 @@ cmake_policy(VERSION 3.25)
 # Create a project for the application
 project(AMMBER CXX)
 
-
 # Define the header-only library as an INTERFACE target
 add_library(ammber INTERFACE)
 
@@ -16,16 +15,12 @@ add_library(ammber INTERFACE)
 add_library(AMMBER::ammber ALIAS ammber)
 
 # Find the PRISMS-PF package
-find_package(
-  PRISMS-PF
-  REQUIRED
-  HINTS
-    ${PRISMS_PF_DIR}
-    $ENV{PRISMS_PF_DIR}
-)
+find_package(PRISMS-PF REQUIRED HINTS ${PRISMS_PF_DIR} $ENV{PRISMS_PF_DIR})
 
 # Include the headers in this repo
-target_include_directories(ammber INTERFACE
+target_include_directories(
+  ammber
+  INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vendor>
     $<INSTALL_INTERFACE:include>
@@ -55,9 +50,10 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY vendor/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Export the target to a targets file
-install(TARGETS ammber
-    EXPORT ${PROJECT_NAME}Targets
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+install(
+  TARGETS ammber
+  EXPORT ${PROJECT_NAME}Targets
+  INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
 ## Generate the version file (ensures find_package can check version constraints)
@@ -69,20 +65,21 @@ install(TARGETS ammber
 
 # Create the main Package Config file
 configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-    INSTALL_DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
+  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/${PROJECT_NAME}Config.cmake.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+  INSTALL_DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
 )
 
 # Install all the generated CMake files
-install(EXPORT ${PROJECT_NAME}Targets
-    FILE ${PROJECT_NAME}Targets.cmake
-    NAMESPACE ${PROJECT_NAME}::
-    DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  FILE ${PROJECT_NAME}Targets.cmake
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
 )
 
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
-#    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
-    DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
+install(
+  FILES "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake"
+  #    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigVersion.cmake"
+  DESTINATION ${PROJECT_CONFIG_INSTALL_DIR}
 )
