@@ -36,7 +36,7 @@ public:
   void
   compute_rhs(FieldContainer<dim, degree, number> &variable_list,
               const SimulationTimer               &sim_timer,
-              unsigned int                         solve_block_id) const override final
+              unsigned int                         solve_block_id) const override
   {
     SystemContainer<dim, degree, number> sys_container(sys, get_user_inputs());
     if (solve_block_id == ParaboloidSystem::explicit_block_id)
