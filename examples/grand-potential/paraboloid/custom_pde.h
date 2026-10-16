@@ -1,4 +1,7 @@
+#pragma once
+
 #include <ammber/core/paraboloid_pde.h>
+
 #include <prismspf/core/pde_operator_base.h>
 
 PRISMS_PF_BEGIN_NAMESPACE

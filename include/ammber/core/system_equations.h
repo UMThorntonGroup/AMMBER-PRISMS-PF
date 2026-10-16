@@ -1,13 +1,13 @@
-#ifndef SYSTEMCONTAINER_H
-#define SYSTEMCONTAINER_H
-
-#include <deal.II/base/tensor.h>
-#include <deal.II/base/vectorization.h>
+#pragma once
 
 #include <ammber/core/paraboloid_system.h>
 #include <ammber/utilities/auto_diff.h>
+
 #include <prismspf/core/field_container.h>
 #include <prismspf/user_inputs/user_input_parameters.h>
+
+#include <deal.II/base/tensor.h>
+#include <deal.II/base/vectorization.h>
 
 using namespace prismspf;
 
@@ -442,5 +442,3 @@ public:
       }
   }
 };
-
-#endif

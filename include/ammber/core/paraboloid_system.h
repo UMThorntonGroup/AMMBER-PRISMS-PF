@@ -1,13 +1,13 @@
-#ifndef PARABOLOIDSYSTEM_H
-#define PARABOLOIDSYSTEM_H
+#pragma once
+
+#include <prismspf/core/field_attributes.h>
+#include <prismspf/core/solve_block.h>
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <map>
 #include <nlohmann/json.hpp>
-#include <prismspf/core/field_attributes.h>
-#include <prismspf/core/solve_block.h>
 #include <string>
 
 using namespace prismspf;
@@ -521,5 +521,3 @@ public:
     return 0.5 * (1.0 + tanh(2.0 * sdf / l_int));
   }
 };
-
-#endif

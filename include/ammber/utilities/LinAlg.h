@@ -1,11 +1,10 @@
-#ifndef LINALG_H
-#define LINALG_H
+#pragma once
+
+#include <ammber/utilities/auto_diff.h>
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/symmetric.hpp>
 #include <boost/numeric/ublas/vector.hpp>
-
-#include <ammber/utilities/auto_diff.h>
 
 template <typename number>
 using boost_vector = boost::numeric::ublas::vector<number>;
@@ -126,5 +125,3 @@ inverse_from_cholesky(const boost_symmet<number> &A)
 
   return Ainv;
 }
-
-#endif // LINALG_H

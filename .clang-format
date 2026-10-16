@@ -77,10 +77,10 @@ FixNamespaceComments: true
 IncludeBlocks:   Regroup
 IncludeCategories:
   # ammber first
-  - Regex:    '<ammber*>'
+  - Regex:    '<ammber.*>'
     Priority:       1
   # prismspf next
-  - Regex:    '<prismspf*>'
+  - Regex:    '<prismspf.*>'
     Priority:       2
   # deal.II headers:
   - Regex:    '<deal.II.*>'

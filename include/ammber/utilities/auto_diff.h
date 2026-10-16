@@ -1,5 +1,4 @@
-#ifndef FIELDCONTAINER_H
-#define FIELDCONTAINER_H
+#pragma once
 
 #include <deal.II/base/tensor.h>
 
@@ -134,8 +133,7 @@ struct Dual
   operator/(const Dual<number, dim> &other) const
   {
     return Dual<number, dim> {val / other.val,
-                              (grad * other.val - val * other.grad) /
-                                (other.val * other.val)};
+                              (grad * other.val - val * other.grad) / (other.val * other.val)};
   }
 
   template <typename other_number>
@@ -366,5 +364,3 @@ operator*(const Variation<number, dim> &variation, const Dual<number, dim> &fiel
 {
   return field * variation;
 }
-
-#endif // FIELDCONTAINER_H
