@@ -1,7 +1,6 @@
 #include <ammber/core/paraboloid_pde.h>
 #include <prismspf/core/pde_operator_base.h>
 
-
 PRISMS_PF_BEGIN_NAMESPACE
 
 template <unsigned int dim, unsigned int degree, typename number>
@@ -41,15 +40,13 @@ public:
                         [[maybe_unused]] number                   &scalar_value,
                         [[maybe_unused]] number                   &vector_component_value) const override
   {
-    // ---------------------------------------------------------------------
-    // TODO: ENTER THE INITIAL CONDITIONS HERE >
-    // ---------------------------------------------------------------------
     // Custom coordinate system
     const dealii::Tensor<1, dim> &mesh_size = get_user_inputs().spatial_discretization.rectangular_mesh.size;
-    double                        x         = (dim < 1) ? 0.0 : point[0];
-    double                        y         = (dim < 2) ? 0.0 : point[1];
-    double                        z         = (dim < 3) ? 0.0 : point[2];
-    double                        r2        = x * x + y * y + z * z;
+
+    double x  = (dim < 1) ? 0.0 : point[0];
+    double y  = (dim < 2) ? 0.0 : point[1];
+    double z  = (dim < 3) ? 0.0 : point[2];
+    double r2 = x * x + y * y + z * z;
 
     // TODO: Make relevant geometries
     [[maybe_unused]] double circular = sys.interface(0.5 * (r0 * r0 - r2) / r0);
