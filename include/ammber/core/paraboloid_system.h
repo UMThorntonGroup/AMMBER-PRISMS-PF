@@ -90,6 +90,10 @@ public:
    * @brief Whether to consider temperature dependence in the model
    */
   bool temperature_dependent = false;
+  /**
+   * @brief Whether to multiply the mobility by the local concentration
+   */
+  bool comp_dependent_mobility = false;
 
   /**
    * @brief Constructor
@@ -181,6 +185,13 @@ public:
                 comp.k_well /= Vm;
               }
           }
+      }
+
+    // Check if volumetrization needed
+    comp_dependent_mobility = false;
+    if (const auto &a = j.find("comp_dependent_mobility"); a != j.end())
+      {
+        comp_dependent_mobility = a->get<bool>();
       }
   }
 
