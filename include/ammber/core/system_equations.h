@@ -320,7 +320,7 @@ public:
             PhaseData  &phase           = phase_data[phase_index];
             ScalarValue c_phase         = comp_info.c_min + comp.mu.val / comp_info.k_well;
             ScalarValue comp_dependence = (sys().comp_dependent_mobility ? c_phase : ScalarValue(1.0));
-            comp.M += comp_dependence * phase_info.D * c_phase * phase.h.val / comp_info.k_well;
+            comp.M += comp_dependence * phase_info.D * phase.h.val / comp_info.k_well;
           }
       }
   }
