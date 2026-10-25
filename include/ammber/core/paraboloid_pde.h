@@ -37,6 +37,52 @@ public:
   {}
 
   void
+  compute_primary_rhs(FieldContainer<dim, degree, number>  &variable_list,
+                      const SimulationTimer                &sim_timer,
+                      SystemContainer<dim, degree, number> &sys_container) const
+  {
+    sys_container.initialize_fields_explicit(variable_list);
+
+    sys_container.calculate_sum_sq_eta();
+    sys_container.calculate_h();
+    sys_container.calculate_dhdeta();
+    sys_container.calculate_local_mobility();
+    sys_container.calculate_dmudt();
+
+    sys_container.submit_fields_explicit(variable_list, sim_timer.get_timestep());
+  }
+
+  void
+  compute_detadt_rhs(FieldContainer<dim, degree, number>  &variable_list,
+                     const SimulationTimer                &sim_timer,
+                     SystemContainer<dim, degree, number> &sys_container) const
+  {
+    sys_container.initialize_fields_aux(variable_list);
+
+    sys_container.calculate_omega_phase();
+    sys_container.calculate_sum_sq_eta();
+    sys_container.calculate_h();
+    sys_container.calculate_dhdeta();
+    sys_container.calculate_detadt();
+
+    sys_container.submit_fields_aux(variable_list);
+  }
+
+  void
+  compute_postprocess_rhs(FieldContainer<dim, degree, number>  &variable_list,
+                          const SimulationTimer                &sim_timer,
+                          SystemContainer<dim, degree, number> &sys_container) const
+  {
+    sys_container.initialize_fields_postprocess(variable_list);
+
+    sys_container.calculate_omega_phase();
+    sys_container.calculate_sum_sq_eta();
+    sys_container.calculate_h();
+
+    sys_container.submit_fields_postprocess(variable_list);
+  }
+
+  void
   compute_rhs(FieldContainer<dim, degree, number> &variable_list,
               const SimulationTimer               &sim_timer,
               unsigned int                         solve_block_id) const override
@@ -44,34 +90,15 @@ public:
     SystemContainer<dim, degree, number> sys_container(sys, get_user_inputs());
     if (solve_block_id == ParaboloidSystem::explicit_block_id)
       {
-        sys_container.initialize_fields_explicit(variable_list);
-
-        sys_container.calculate_sum_sq_eta();
-        sys_container.calculate_h();
-        sys_container.calculate_dhdeta();
-        sys_container.calculate_local_mobility();
-        sys_container.calculate_dmudt();
-
-        sys_container.submit_fields_explicit(variable_list, sim_timer.get_timestep());
+        compute_primary_rhs(variable_list, sim_timer, sys_container);
       }
     else if (solve_block_id == ParaboloidSystem::detadt_block_id)
       {
-        sys_container.initialize_fields_aux(variable_list);
-
-        sys_container.calculate_omega_phase();
-        sys_container.calculate_sum_sq_eta();
-        sys_container.calculate_h();
-        sys_container.calculate_dhdeta();
-        sys_container.calculate_detadt();
-
-        sys_container.submit_fields_aux(variable_list);
+        compute_detadt_rhs(variable_list, sim_timer, sys_container);
       }
     else if (solve_block_id == ParaboloidSystem::pp_block_id)
       {
-        sys_container.initialize_fields_postprocess(variable_list);
-        sys_container.calculate_sum_sq_eta();
-        sys_container.calculate_h();
-        sys_container.submit_fields_postprocess(variable_list);
+        compute_postprocess_rhs(variable_list, sim_timer, sys_container);
       }
   }
 

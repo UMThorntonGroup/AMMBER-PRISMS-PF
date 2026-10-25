@@ -409,6 +409,28 @@ public:
     // return detadt_base() + num_ops();
   }
 
+  /**
+   * @brief  Get base index for phase fraction h
+   * @return The base index for phase fraction h
+   */
+  size_t
+  h_base() const
+  {
+    return 2 * num_comps() + 2 * num_ops();
+    // return c_tot_base() + num_comps();
+  }
+
+  /**
+   * @brief  Get base index for grand potential density omega
+   * @return The base index for grand potential density omega
+   */
+  size_t
+  omega_base() const
+  {
+    return 2 * num_comps() + 2 * num_ops() + num_phases();
+    // return h_base() + num_phases();
+  }
+
   static constexpr unsigned int explicit_block_id = 0;
   static constexpr unsigned int detadt_block_id   = 1;
   static constexpr unsigned int pp_block_id       = 2;
@@ -424,7 +446,7 @@ public:
     std::vector<std::string> op_names = get_order_parameter_names();
 
     std::vector<FieldAttributes> fields;
-    fields.reserve(2 * comp_names.size() + 2 * op_names.size());
+    fields.reserve(2 * num_comps() + 2 * num_ops() + 2 * num_phases());
     for (const auto &comp_name : comp_names)
       {
         fields.emplace_back("mu_" + comp_name);
@@ -440,6 +462,14 @@ public:
     for (const auto &comp_name : comp_names)
       {
         fields.emplace_back("c_" + comp_name);
+      }
+    for (const auto &phase_name : phase_names)
+      {
+        fields.emplace_back("h_" + phase_name);
+      }
+    for (const auto &phase_name : phase_names)
+      {
+        fields.emplace_back("omega_" + phase_name);
       }
     return fields;
   }
@@ -474,6 +504,14 @@ public:
         detadt.field_indices.insert(var_index);
       }
     for (uint var_index = c_tot_base(); var_index < c_tot_base() + num_comps(); var_index++)
+      {
+        pp.field_indices.insert(var_index);
+      }
+    for (uint var_index = h_base(); var_index < h_base() + num_phases(); var_index++)
+      {
+        pp.field_indices.insert(var_index);
+      }
+    for (uint var_index = omega_base(); var_index < omega_base() + num_phases(); var_index++)
       {
         pp.field_indices.insert(var_index);
       }

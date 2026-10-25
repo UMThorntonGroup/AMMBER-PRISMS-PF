@@ -440,5 +440,11 @@ public:
           }
         variable_list.set_value_term(sys().c_tot_base() + comp_index, c);
       }
+    for (uint phase_index = 0; phase_index < sys().num_phases(); phase_index++)
+      {
+        const PhaseData &phase = phase_data.at(phase_index);
+        variable_list.set_value_term(sys().h_base() + phase_index, phase.h.val);
+        variable_list.set_value_term(sys().omega_base() + phase_index, phase.omega.val);
+      }
   }
 };
