@@ -271,7 +271,7 @@ public:
             double      sigma_ab = 0.5 * (sys().phases[alpha_index].sigma + sys().phases[beta_index].sigma);
             double      m_ab     = 6.00 * sigma_ab / sys().l_int;
             double      kappa_ab = 0.75 * sigma_ab * sys().l_int;
-            ScalarValue pair_sq_eta = op1.eta.val * op1.eta.val + op2.eta.val * op2.eta.val;
+            ScalarValue pair_sq_eta = op1.eta.val * op1.eta.val * op2.eta.val * op2.eta.val;
             L += L_ab * pair_sq_eta;
             m += m_ab * pair_sq_eta;
             kappa += kappa_ab * pair_sq_eta;
