@@ -431,6 +431,17 @@ public:
     // return h_base() + num_phases();
   }
 
+  /**
+   * @brief  Get base index for dh/deta
+   * @return The base index for dh/deta
+   */
+  size_t
+  dh_deta_base() const
+  {
+    return 2 * num_comps() + 2 * num_ops() + 2 * num_phases();
+    // return omega_base() + num_phases();
+  }
+
   static constexpr unsigned int explicit_block_id = 0;
   static constexpr unsigned int detadt_block_id   = 1;
   static constexpr unsigned int pp_block_id       = 2;
@@ -470,6 +481,13 @@ public:
     for (const auto &phase_name : phase_names)
       {
         fields.emplace_back("omega_" + phase_name);
+      }
+    for (const auto &op_name : op_names)
+      {
+        for (const auto &phase_name : phase_names)
+          {
+            fields.emplace_back("dh_" + phase_name + "_deta_" + op_name);
+          }
       }
     return fields;
   }
@@ -512,6 +530,10 @@ public:
         pp.field_indices.insert(var_index);
       }
     for (uint var_index = omega_base(); var_index < omega_base() + num_phases(); var_index++)
+      {
+        pp.field_indices.insert(var_index);
+      }
+    for (uint var_index = dh_deta_base(); var_index < dh_deta_base() + num_phases() * num_ops(); var_index++)
       {
         pp.field_indices.insert(var_index);
       }

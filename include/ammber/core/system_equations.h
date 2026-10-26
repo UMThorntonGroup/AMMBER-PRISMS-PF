@@ -446,5 +446,14 @@ public:
         variable_list.set_value_term(sys().h_base() + phase_index, phase.h.val);
         variable_list.set_value_term(sys().omega_base() + phase_index, phase.omega.val);
       }
+    for (uint op_index = 0; op_index < sys().num_ops(); op_index++)
+      {
+        const auto &[alpha_index, op] = op_data[op_index];
+        for (uint beta_index = 0; beta_index < sys().num_phases(); beta_index++)
+          {
+            variable_list.set_value_term(sys().dh_deta_base() + sys().num_phases() * op_index + beta_index,
+                                         op.dhdeta.at(beta_index).val);
+          }
+      }
   }
 };

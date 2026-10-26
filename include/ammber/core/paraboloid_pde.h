@@ -78,6 +78,7 @@ public:
     sys_container.calculate_omega_phase();
     sys_container.calculate_sum_sq_eta();
     sys_container.calculate_h();
+    sys_container.calculate_dhdeta();
 
     sys_container.submit_fields_postprocess(variable_list);
   }
