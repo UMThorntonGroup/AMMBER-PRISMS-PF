@@ -1,0 +1,79 @@
+{
+    "dimensions": {
+        "length_scale": 0.0,
+        "time_scale": 0.0,
+        "energy_density_scale": 0.0
+    },
+    "convert_fractional_to_volumetric_energy": false,
+    "solution_component": "AL",
+    "components": [
+        "CU", "SI"
+    ],
+    "Vm": 1.0,
+    "l_int": 4.0e-9,
+    "phases": [
+        {
+            "name": "alpha",
+            "mu_int": 1.0e-10,
+            "D": [
+                [ 1.5e-12, 1.5e-12 ],
+                [ 1.5e-12, 1.5e-12 ]
+            ],
+            "c_ref": [ 0.2, 0.3 ],
+            "A": [
+                [ 2.0, 1.0 ],
+                [ 1.0, 2.0 ]
+            ],
+            "B": [ 0.0, 0.0 ],
+            "C": 0.0,
+            "c0": [ 0.2, 0.3 ]
+        },
+        {
+            "name": "beta",
+            "mu_int": 1.0e-10,
+            "D": [
+                [ 3e-10, 3e-10 ],
+                [ 3e-10, 3e-10 ]
+            ],
+            "c_ref": [ 0.4, 0.5 ],
+            "A": [
+                [ 2.0, 1.0 ],
+                [ 1.0, 2.0 ]
+            ],
+            "B": [ 0.0, 0.0 ],
+            "C": 0.0,
+            "c0": [ 0.4, 0.5 ]
+        },
+        {
+            "name": "gamma",
+            "mu_int": 1.0e-10,
+            "D": [
+                [ 2.106e-10, 2.106e-10 ],
+                [ 2.106e-10, 2.106e-10 ]
+            ],
+            "c_ref": [ 0.4, 0.5 ],
+            "A": [
+                [ 2.0, 1.0 ],
+                [ 1.0, 2.0 ]
+            ],
+            "B": [ 0.0, 0.0 ],
+            "C": 0.0,
+            "c0": [ 0.2, 0.3 ]
+        }
+    ],
+    "sigma": [
+        [ 1.0, 1.0, 1.0 ],
+        [ 1.0, 1.0, 1.0 ],
+        [ 1.0, 1.0, 1.0 ]
+    ],
+    "order_parameters": [
+        "alpha",
+        "gamma"
+    ],
+    "comments": [
+        "T = 1063 K",
+        "0.0018 C alpha eq composition",
+        "0.0339 C gamma eq composition",
+        "0.0065 C initial composition"
+    ]
+}

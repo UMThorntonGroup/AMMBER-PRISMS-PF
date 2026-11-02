@@ -3,6 +3,8 @@
 #include <prismspf/core/field_attributes.h>
 #include <prismspf/core/solve_block.h>
 
+#include <ammber/core/scales.h>
+
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -11,20 +13,6 @@
 #include <string>
 
 using namespace prismspf;
-
-struct Scales
-{
-  double length_scale, time_scale, energy_scale;
-
-  void
-  from_json(const nlohmann::json &j)
-  {
-    // Parse Dimensions
-    length_scale = j.at("dimensions").at("length_scale").get<double>();
-    time_scale   = j.at("dimensions").at("time_scale").get<double>();
-    energy_scale = j.at("dimensions").at("energy_density_scale").get<double>();
-  }
-};
 
 /**
  * @brief Class containing the thermodynamic and kinetic parameters needed for the grand
