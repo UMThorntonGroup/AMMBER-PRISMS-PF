@@ -189,17 +189,17 @@ public:
         std::cout << std::setw(col_width) << phase.name << "\n";
         std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width) << phase.mu_int << "\n";
         const auto print_matrix = [&](const char *name, const boost_matrix<double> &matrix)
-        {
-          std::cout << name << "\n";
-          for (std::size_t i = 0; i < matrix.size1(); ++i)
-            {
-              for (std::size_t j = 0; j < matrix.size2(); ++j)
-                {
-                  std::cout << std::setw(col_width) << matrix(i, j);
-                }
-              std::cout << "\n";
-            }
-        };
+          {
+            std::cout << name << "\n";
+            for (std::size_t i = 0; i < matrix.size1(); ++i)
+              {
+                for (std::size_t j = 0; j < matrix.size2(); ++j)
+                  {
+                    std::cout << std::setw(col_width) << matrix(i, j);
+                  }
+                std::cout << "\n";
+              }
+          };
         print_matrix("D:", phase.D);
         print_matrix("A:", phase.A);
         std::cout << "B:";
@@ -323,6 +323,71 @@ public:
   num_ops() const
   {
     return order_params.size();
+  }
+
+  /**
+   * @brief Get base index for diffusion potentials
+   * @return The base index for diffusion potentials
+   */
+  size_t
+  mu_base() const
+  {
+    return 0;
+  }
+
+  /**
+   * @brief Get base index for order parameters
+   * @return The base index for order parameters
+   */
+  size_t
+  eta_base() const
+  {
+    return num_comps();
+    // return mu_base() + num_comps();
+  }
+
+  /**
+   * @brief  Get base index for phase fraction h
+   * @return The base index for phase fraction h
+   */
+  size_t
+  h_base() const
+  {
+    return 2 * num_comps() + 2 * num_ops();
+    // return c_tot_base() + num_comps();
+  }
+
+  /**
+   * @brief  Get base index for order parameters time derivatives
+   * @return The base index for order parameters time derivatives
+   */
+  size_t
+  detadt_base() const
+  {
+    return num_comps() + num_ops();
+    // return eta_base() + num_ops();
+  }
+
+  /**
+   * @brief  Get base index for total concentration
+   * @return The base index for total concentration
+   */
+  size_t
+  c_tot_base() const
+  {
+    return num_comps() + 2 * num_ops();
+    // return detadt_base() + num_ops();
+  }
+
+  /**
+   * @brief  Get base index for grand potential density omega
+   * @return The base index for grand potential density omega
+   */
+  size_t
+  omega_base() const
+  {
+    return 2 * num_comps() + 2 * num_ops() + num_phases();
+    // return h_base() + num_phases();
   }
 
 private:
