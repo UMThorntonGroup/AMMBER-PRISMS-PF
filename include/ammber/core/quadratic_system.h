@@ -178,7 +178,8 @@ public:
   print_parameters() const
   {
     const int col_width = 15;
-    std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width) << "Value" << "\n";
+    std::cout << std::left << std::setw(col_width) << "Name" << std::setw(col_width) << "Value"
+              << "\n";
     std::cout << std::string(2 * col_width, '-') << "\n";
     std::cout << std::setw(col_width) << "Vm:" << std::setw(col_width) << Vm << "\n";
     std::cout << std::setw(col_width) << "l_int:" << std::setw(col_width) << l_int << "\n\n";
@@ -188,17 +189,17 @@ public:
         std::cout << std::setw(col_width) << phase.name << "\n";
         std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width) << phase.mu_int << "\n";
         const auto print_matrix = [&](const char *name, const boost_matrix<double> &matrix)
-          {
-            std::cout << name << "\n";
-            for (std::size_t i = 0; i < matrix.size1(); ++i)
-              {
-                for (std::size_t j = 0; j < matrix.size2(); ++j)
-                  {
-                    std::cout << std::setw(col_width) << matrix(i, j);
-                  }
-                std::cout << "\n";
-              }
-          };
+        {
+          std::cout << name << "\n";
+          for (std::size_t i = 0; i < matrix.size1(); ++i)
+            {
+              for (std::size_t j = 0; j < matrix.size2(); ++j)
+                {
+                  std::cout << std::setw(col_width) << matrix(i, j);
+                }
+              std::cout << "\n";
+            }
+        };
         print_matrix("D:", phase.D);
         print_matrix("A:", phase.A);
         std::cout << "B:";
@@ -266,6 +267,64 @@ public:
   load_variables()
   {}
 
+  void
+  update_derived_parameters()
+  {
+    for (Phase &phase : phases)
+      {
+        phase.mu0 = prod(phase.A, phase.c0 - phase.c_ref) + phase.B;
+
+        dealii::FullMatrix<double> helper(num_comps);
+        for (std::size_t i = 0; i < num_comps; ++i)
+          {
+            for (std::size_t j = 0; j < num_comps; ++j)
+              {
+                helper(i, j) = phase.A(i, j);
+              }
+          }
+        dealii::FullMatrix<double> helper_inv(num_comps);
+        helper_inv.invert(helper);
+        phase.suscept = boost_matrix<double>(num_comps, num_comps);
+        for (std::size_t i = 0; i < num_comps; ++i)
+          {
+            for (std::size_t j = 0; j < num_comps; ++j)
+              {
+                phase.suscept(i, j) = helper_inv(i, j);
+              }
+          }
+      }
+  }
+
+  /**
+   * @brief Get number of components
+   * @return The number of components
+   */
+  size_t
+  num_comps() const
+  {
+    return comp_names.size();
+  }
+
+  /**
+   * @brief  Get number of phases
+   * @return The number of phases
+   */
+  size_t
+  num_phases() const
+  {
+    return phases.size();
+  }
+
+  /**
+   * @brief Get number of order parameters
+   * @return The number of order parameters
+   */
+  size_t
+  num_ops() const
+  {
+    return order_params.size();
+  }
+
 private:
   static boost_vector<double>
   parse_vector(const nlohmann::json &j, std::size_t size)
@@ -304,33 +363,5 @@ private:
           }
       }
     return result;
-  }
-
-  void
-  update_derived_parameters()
-  {
-    for (Phase &phase : phases)
-      {
-        phase.mu0 = prod(phase.A, phase.c0 - phase.c_ref) + phase.B;
-
-        dealii::FullMatrix<double> helper(num_comps);
-        for (std::size_t i = 0; i < num_comps; ++i)
-          {
-            for (std::size_t j = 0; j < num_comps; ++j)
-              {
-                helper(i, j) = phase.A(i, j);
-              }
-          }
-        dealii::FullMatrix<double> helper_inv(num_comps);
-        helper_inv.invert(helper);
-        phase.suscept = boost_matrix<double>(num_comps, num_comps);
-        for (std::size_t i = 0; i < num_comps; ++i)
-          {
-            for (std::size_t j = 0; j < num_comps; ++j)
-              {
-                phase.suscept(i, j) = helper_inv(i, j);
-              }
-          }
-      }
   }
 };
