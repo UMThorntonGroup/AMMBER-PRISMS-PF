@@ -2,6 +2,7 @@
 
 #include <ammber/core/paraboloid_system.h>
 #include <ammber/utilities/auto_diff.h>
+#include <ammber/utilities/mat_inversion.h>
 
 #include <prismspf/core/field_container.h>
 #include <prismspf/user_inputs/user_input_parameters.h>
@@ -15,8 +16,9 @@ using namespace prismspf;
  * @brief Class for solving the PDE (equations.cc and postprocess.cc)
  * @tparam dim The dimension of the problem
  * @tparam degree The degree of the finite element
+ * @tparam num_comps The number of components
  */
-template <int dim, int degree, typename number>
+template <int dim, int degree, typename number, unsigned num_comps>
 class QuadraticEquations
 {
 public:
@@ -25,23 +27,21 @@ public:
   using ScalarField     = Dual<ScalarValue, dim>;
   using ScalarVariation = Variation<ScalarValue, dim>;
   using VarList         = FieldContainer<dim, degree, number>;
+  template <typename T>
+  using CompVector = dealii::Tensor<1, num_comps, T>;
+  template <typename T>
+  using CompMatrix = dealii::Tensor<2, num_comps, T>;
+  template <typename T>
+  using CompSymmet = dealii::SymmetricTensor<2, num_comps, T>;
 
   /**
    * @brief Data structure to hold the phase data
    */
   struct PhaseData
   {
-    ScalarField omega;
-    ScalarField h;
-  };
-
-  /**
-   * @brief Data structure to hold the composition data
-   */
-  struct CompData
-  {
-    ScalarField     mu;
-    ScalarVariation dmudt;
+    ScalarField             omega;
+    ScalarField             h;
+    CompVector<ScalarField> c_phase;
   };
 
   /**
@@ -67,12 +67,15 @@ public:
   /**
    * @brief Values associated with each component
    */
-  std::vector<CompData> comp_data;
+  CompVector<ScalarField>     mu;
+  CompVector<ScalarVariation> dmudt;
+  CompMatrix<ScalarValue>     M;
+
   /**
    * @brief Values associated with each order parameter
    */
   std::vector<std::pair<uint, OPData>> op_data;
-  boost_symmet<ScalarValue>            M;
+
   /**
    * @brief Sum of squares of the order parameters
    */
@@ -84,7 +87,7 @@ public:
   explicit QuadraticEquations(const QuadraticSystem &_sys)
     : sys_ptr(&_sys)
     , phase_data(sys().phases.size())
-    , comp_data(sys().num_comps())
+    , comp_data(num_comps)
     , op_data(sys().num_ops())
     , sum_sq_eta({})
   {}
@@ -105,7 +108,7 @@ public:
   void
   initialize_fields_explicit(const VarList &variable_list)
   {
-    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         comp_data[comp_index].mu.val =
           variable_list.template get_value<Scalar, OldOne>(sys().mu_base() + comp_index);
@@ -131,7 +134,7 @@ public:
   void
   initialize_fields_aux(const VarList &variable_list)
   {
-    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         comp_data[comp_index].mu.val =
           variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
@@ -157,7 +160,7 @@ public:
   void
   initialize_fields_postprocess(const VarList &variable_list)
   {
-    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         comp_data[comp_index].mu.val =
           variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
@@ -176,19 +179,32 @@ public:
    * @brief Calculate the grand potential density for each phase
    */
   void
+  calculate_c_phase()
+  {
+    for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
+      {
+        const QuadraticSystem::Phase &phase_info = sys().phases[phase_index];
+        PhaseData                    &phase      = phase_data[phase_index];
+        phase.omega.val                          = phase_info.C;
+        auto delta_mu                            = mu - phase_info.B;
+        phase.c_phase                            = phase_info.c_ref + phase_info.suscept * delta_mu;
+      }
+  }
+
+  /**
+   * @brief Calculate the grand potential density for each phase
+   */
+  void
   calculate_omega_phase()
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         const QuadraticSystem::Phase &phase_info = sys().phases[phase_index];
         PhaseData                    &phase      = phase_data[phase_index];
-        phase.omega.val                          = phase_info.f_min;
-        for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
-          {
-            const CompData                       &comp      = comp_data.at(comp_index);
-            const QuadraticSystem::PhaseCompInfo &comp_info = phase_info.comps.at(comp_index);
-            phase.omega += -comp.mu * comp.mu / (2.0 * comp_info.k_well) - comp.mu * comp_info.c_min;
-          }
+        phase.omega.val                          = phase_info.C;
+        auto delta_mu                            = mu - phase_info.B;
+        auto delta_c                             = phase_info.suscept * delta_mu;
+        phase.omega += -0.5 * delta_mu * delta_c - phase_info.mu_int * phase.c_phase;
       }
   }
 
@@ -269,7 +285,7 @@ public:
                            (sys().phases[alpha_index].mu_int + sys().phases[beta_index].mu_int);
             double L_ab = 4.0 * mu_ab / sys().l_int / 3.0;
             double sigma_ab =
-              0.5 * (sys().sigma.at(alpha_index, beta_index) + sys().sigma.at(beta_index, alpha_index));
+              0.5 * (sys().sigma(alpha_index, beta_index) + sys().sigma(beta_index, alpha_index));
             double      m_ab        = 6.00 * sigma_ab / sys().l_int;
             double      kappa_ab    = 0.75 * sigma_ab * sys().l_int;
             ScalarValue pair_sq_eta = op1.eta.val * op1.eta.val * op2.eta.val * op2.eta.val;
@@ -310,63 +326,57 @@ public:
   void
   calculate_local_mobility()
   {
-    for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
+    M.clear();
+    for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        CompData &comp = comp_data[comp_index];
-        comp.M         = 0.0;
-        for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
-          {
-            const auto &phase_info      = sys().phases.at(phase_index);
-            const auto &comp_info       = phase_info.comps.at(comp_index);
-            PhaseData  &phase           = phase_data[phase_index];
-            ScalarValue c_phase         = comp_info.c_min + comp.mu.val / comp_info.k_well;
-            ScalarValue comp_dependence = (sys().comp_dependent_mobility ? c_phase : ScalarValue(1.0));
-            comp.M += comp_dependence * phase_info.D * phase.h.val / comp_info.k_well;
-          }
+        PhaseData                     &phase      = phase_data[phase_index];
+        const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(phase_index);
+        const double                  &D          = phase_info.D;
+        const boost_symmet<double>    &suscept    = phase_info.suscept;
+        M += phase.h.val * phase_info.D * phase_info.suscept;
       }
   }
 
   /**
    * @brief Calculate the time evolution of the chemical potential
    * @details Calculates the evolution of the composition, then converts to chemical
-   * potential through the susceptibility, chi_AA
+   * potential through the susceptibility, local_suscept
    */
   void
   calculate_dmudt()
   {
-    for (uint comp_index = 0; comp_index < comp_data.size(); comp_index++)
+    CompSymmet<ScalarField> local_suscept;
+    for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        CompData &comp = comp_data[comp_index];
-
-        // Calculate the susceptibility
-        ScalarField chi_AA;
-        for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
-          {
-            PhaseData                            &phase = phase_data[phase_index];
-            const QuadraticSystem::PhaseCompInfo &comp_info =
-              sys().phases.at(phase_index).comps.at(comp_index);
-            chi_AA += phase.h / comp_info.k_well;
-          }
-
-        // Flux term
-        comp.dmudt.val = 0.0;
-        comp.dmudt.vec = -comp.M * -comp.mu.grad;
-
-        // Partitioning term
-        for (auto &[phase_index, op] : op_data)
-          {
-            ScalarField dcdeta_sum;
-            for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
-              {
-                auto &comp_info = sys().phases.at(beta_index).comps.at(comp_index);
-                dcdeta_sum += op.dhdeta.at(beta_index) * (comp.mu / comp_info.k_well + comp_info.c_min);
-              }
-            comp.dmudt -= dcdeta_sum.val * op.detadt_field;
-          }
-
-        // Convert from dcdt to dmudt
-        comp.dmudt = (1.0 / chi_AA) * comp.dmudt;
+        PhaseData                     &phase      = phase_data[phase_index];
+        const ParaboloidSystem::Phase &phase_info = sys().phases[phase_index];
+        local_suscept += phase.h * dealii::symmetrize(phase_info.suscept);
       }
+    // Flux term
+    for (uint comp_i = 0; comp_i < comp_data.size(); comp_i++)
+      {
+        dmudt[comp_i].val = 0.0;
+        for (uint comp_j = 0; comp_j < comp_data.size(); comp_j++)
+          {
+            dmudt[comp_i].vec += M * mu[comp_j].grad;
+          }
+      }
+    // Partitioning term
+    for (auto &[phase_index, op] : op_data)
+      {
+        CompVector<ScalarField> dcdeta;
+        for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
+          {
+            dcdeta += op.dhdeta.at(beta_index) * (phase_data[beta_index].c_phase);
+          }
+        for (uint comp_index = 0; comp_index < num_comps; comp_index++)
+          {
+            dmudt[comp_index] -= op.detadt_field * dcdeta[comp_index].val;
+          }
+      }
+    // Convert from dcdt to dmudt
+    CompMatrix<ScalarField> suscept_inv = inverse_from_cholesky(local_suscept);
+    dmudt                               = suscept_inv * dmudt;
   }
 
   /**
@@ -391,7 +401,7 @@ public:
   void
   submit_fields_explicit(VarList &variable_list, double dt)
   {
-    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         CompData &comp = comp_data[comp_index];
         variable_list.set_value_term(sys().mu_base() + comp_index, comp.mu.val + comp.dmudt.val * dt);
@@ -427,7 +437,7 @@ public:
   void
   submit_fields_postprocess(VarList &variable_list)
   {
-    for (uint comp_index = 0; comp_index < sys().num_comps(); comp_index++)
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         CompData   &comp = comp_data[comp_index];
         ScalarValue c(0.0);

@@ -21,43 +21,43 @@
 #include <utility>
 #include <vector>
 
-template <typename number>
-using boost_vector = boost::numeric::ublas::vector<number>;
-template <typename number>
-using boost_matrix = boost::numeric::ublas::matrix<number>;
-template <typename number>
-using boost_symmet = boost::numeric::ublas::symmetric_matrix<number>;
-
 using namespace prismspf;
 
 /**
  * @brief Class containing the thermodynamic and kinetic parameters needed for the grand
  * potential based model using second-order polynomials
  */
+template <unsigned num_comps>
 class QuadraticSystem
 {
 public:
+  template <typename T>
+  using CompVector = dealii::Tensor<1, num_comps, T>;
+  template <typename T>
+  using CompMatrix = dealii::Tensor<2, num_comps, T>;
+  template <typename T>
+  using CompSymmet = dealii::SymmetricTensor<2, num_comps, T>;
+
   /**
    * @brief Parameters for each phase
    */
   struct Phase
   {
-    std::string          name;
-    double               mu_int = 0.0;
-    boost_matrix<double> D, A, suscept;
-    boost_vector<double> B, c_ref, c0, mu0;
-    double               C = 0.0;
+    std::string        name;
+    double             mu_int = 0.0;
+    CompMatrix<double> D, A, suscept;
+    CompVector<double> B, c_ref, c0, mu0;
+    double             C = 0.0;
   };
 
-  std::vector<Phase>       phases;
-  std::vector<std::string> comp_names;
-  std::vector<std::string> phase_names;
-  std::string              solution_component;
-  unsigned int             num_comps = 0;
-  std::vector<uint>        order_params;
-  boost_matrix<double>     sigma;
-  double                   Vm    = 0.0;
-  double                   l_int = 0.0;
+  std::array<std::string, num_comps> comp_names;
+  std::vector<Phase>                 phases;
+  std::vector<std::string>           phase_names;
+  std::string                        solution_component;
+  std::vector<unsigned int>          order_params;
+  dealii::FullMatrix<double>         sigma;
+  double                             Vm    = 0.0;
+  double                             l_int = 0.0;
 
   /**
    * @brief Constructor
@@ -279,7 +279,7 @@ public:
           {
             for (std::size_t j = 0; j < num_comps; ++j)
               {
-                helper(i, j) = phase.A(i, j);
+                helper(i, j) = phase.A[i][j];
               }
           }
         dealii::FullMatrix<double> helper_inv(num_comps);
@@ -289,7 +289,7 @@ public:
           {
             for (std::size_t j = 0; j < num_comps; ++j)
               {
-                phase.suscept(i, j) = helper_inv(i, j);
+                phase.suscept[i][j] = helper_inv(i, j);
               }
           }
       }
