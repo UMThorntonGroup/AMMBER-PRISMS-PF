@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ammber/core/paraboloid_system.h>
+#include <ammber/core/quadratic_system.h>
 #include <ammber/utilities/auto_diff.h>
 #include <ammber/utilities/mat_inversion.h>
 
@@ -58,7 +58,7 @@ public:
   /**
    * @brief Pointer to the system parameters
    */
-  const QuadraticSystem *sys_ptr;
+  const QuadraticSystem<num_comps> *sys_ptr;
 
   /**
    * @brief Values associated with each phase
@@ -84,10 +84,9 @@ public:
   /**
    * Constructor
    */
-  explicit QuadraticEquations(const QuadraticSystem &_sys)
+  explicit QuadraticEquations(const QuadraticSystem<num_comps> &_sys)
     : sys_ptr(&_sys)
     , phase_data(sys().phases.size())
-    , comp_data(num_comps)
     , op_data(sys().num_ops())
     , sum_sq_eta({})
   {}
@@ -95,7 +94,7 @@ public:
   ~QuadraticEquations()
   {}
 
-  const QuadraticSystem &
+  const QuadraticSystem<num_comps> &
   sys() const
   {
     return *sys_ptr;
@@ -110,9 +109,8 @@ public:
   {
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
-        comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, OldOne>(sys().mu_base() + comp_index);
-        comp_data[comp_index].mu.grad =
+        mu[comp_index].val = variable_list.template get_value<Scalar, OldOne>(sys().mu_base() + comp_index);
+        mu[comp_index].grad =
           variable_list.template get_gradient<Scalar, OldOne>(sys().mu_base() + comp_index);
       }
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
@@ -136,9 +134,8 @@ public:
   {
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
-        comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
-        comp_data[comp_index].mu.grad =
+        mu[comp_index].val = variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
+        mu[comp_index].grad =
           variable_list.template get_gradient<Scalar, Current>(sys().mu_base() + comp_index);
       }
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
@@ -162,8 +159,7 @@ public:
   {
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
-        comp_data[comp_index].mu.val =
-          variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
+        mu[comp_index].val = variable_list.template get_value<Scalar, Current>(sys().mu_base() + comp_index);
       }
     for (unsigned int op_index = 0; op_index < sys().num_ops(); op_index++)
       {
@@ -183,11 +179,11 @@ public:
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const QuadraticSystem::Phase &phase_info = sys().phases[phase_index];
-        PhaseData                    &phase      = phase_data[phase_index];
-        phase.omega.val                          = phase_info.C;
-        auto delta_mu                            = mu - phase_info.B;
-        phase.c_phase                            = phase_info.c_ref + phase_info.suscept * delta_mu;
+        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
+        PhaseData                                        &phase      = phase_data[phase_index];
+        phase.omega.val                                              = phase_info.C;
+        auto delta_mu                                                = mu - phase_info.B;
+        phase.c_phase = phase_info.c_ref + phase_info.suscept * delta_mu;
       }
   }
 
@@ -199,12 +195,12 @@ public:
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const QuadraticSystem::Phase &phase_info = sys().phases[phase_index];
-        PhaseData                    &phase      = phase_data[phase_index];
-        phase.omega.val                          = phase_info.C;
-        auto delta_mu                            = mu - phase_info.B;
-        auto delta_c                             = phase_info.suscept * delta_mu;
-        phase.omega += -0.5 * delta_mu * delta_c - phase_info.mu_int * phase.c_phase;
+        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
+        PhaseData                                        &phase      = phase_data[phase_index];
+        phase.omega.val                                              = phase_info.C;
+        auto delta_mu                                                = mu - phase_info.B;
+        auto delta_c                                                 = phase_info.suscept * delta_mu;
+        phase.omega += -0.5 * delta_mu * delta_c - mu * phase.c_phase;
       }
   }
 
@@ -300,7 +296,7 @@ public:
     kappa /= sum_pair_sq_eta + 1.0e-12;
     for (auto &[alpha_index, op] : op_data)
       {
-        const QuadraticSystem::Phase &phase_info = sys().phases.at(alpha_index);
+        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases.at(alpha_index);
 
         // Interface term
         ScalarVariation interface_term;
@@ -329,10 +325,10 @@ public:
     M.clear();
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        PhaseData                     &phase      = phase_data[phase_index];
-        const ParaboloidSystem::Phase &phase_info = isoSys->phases.at(phase_index);
-        const double                  &D          = phase_info.D;
-        const boost_symmet<double>    &suscept    = phase_info.suscept;
+        PhaseData                                        &phase      = phase_data[phase_index];
+        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
+        const double                                     &D          = phase_info.D;
+        const CompMatrix<double>                         &suscept    = phase_info.suscept;
         M += phase.h.val * phase_info.D * phase_info.suscept;
       }
   }
@@ -348,15 +344,15 @@ public:
     CompSymmet<ScalarField> local_suscept;
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        PhaseData                     &phase      = phase_data[phase_index];
-        const ParaboloidSystem::Phase &phase_info = sys().phases[phase_index];
+        PhaseData                                        &phase      = phase_data[phase_index];
+        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
         local_suscept += phase.h * dealii::symmetrize(phase_info.suscept);
       }
     // Flux term
-    for (uint comp_i = 0; comp_i < comp_data.size(); comp_i++)
+    for (uint comp_i = 0; comp_i < num_comps; comp_i++)
       {
         dmudt[comp_i].val = 0.0;
-        for (uint comp_j = 0; comp_j < comp_data.size(); comp_j++)
+        for (uint comp_j = 0; comp_j < num_comps; comp_j++)
           {
             dmudt[comp_i].vec += M * mu[comp_j].grad;
           }
@@ -403,9 +399,9 @@ public:
   {
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
-        CompData &comp = comp_data[comp_index];
-        variable_list.set_value_term(sys().mu_base() + comp_index, comp.mu.val + comp.dmudt.val * dt);
-        variable_list.set_gradient_term(sys().mu_base() + comp_index, -comp.dmudt.vec * dt);
+        variable_list.set_value_term(sys().mu_base() + comp_index,
+                                     mu[comp_index].val + dmudt[comp_index].val * dt);
+        variable_list.set_gradient_term(sys().mu_base() + comp_index, -mu[comp_index].grad * dt);
       }
     for (uint op_index = 0; op_index < sys().num_ops(); op_index++)
       {
@@ -439,15 +435,13 @@ public:
   {
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
-        CompData   &comp = comp_data[comp_index];
         ScalarValue c(0.0);
         for (uint phase_index = 0; phase_index < sys().num_phases(); phase_index++)
           {
-            const PhaseData                      &phase = phase_data.at(phase_index);
-            const QuadraticSystem::PhaseCompInfo &comp_info =
+            const PhaseData                                          &phase = phase_data.at(phase_index);
+            const typename QuadraticSystem<num_comps>::PhaseCompInfo &comp_info =
               sys().phases.at(phase_index).comps.at(comp_index);
-            c += phase.h.val * comp_info.c_min;
-            c += phase.h.val * comp.mu.val / comp_info.k_well;
+            c += phase.h.val * phase.c_phase[comp_index];
           }
         variable_list.set_value_term(sys().c_tot_base() + comp_index, c);
       }
