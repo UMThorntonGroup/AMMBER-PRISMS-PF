@@ -116,23 +116,24 @@ public:
   {
     Assert(eta_0.size() == sys.num_ops(), dealii::ExcMessage("Order parameter vector is incorrect size!"));
     const double sum_sq_eta = sum_sq(eta_0) + 1e-8;
-    for (uint comp_index = 0; comp_index < sys.num_comps(); comp_index++)
+    // TODO: fix
+    typename QuadraticSystem<num_comps>::template CompVector<double> mu0;
+    typename QuadraticSystem<num_comps>::template CompMatrix<double> sus_interp;
+    for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
+      {
+        unsigned int phase_index = sys.order_params[op_index];
+        const auto  &phase_info  = sys.phases[phase_index];
+        number       h           = eta_0[op_index] * eta_0[op_index] / sum_sq_eta;
+        mu0 += h * phase_info.c0;
+        sus_interp += h * phase_info.suscept;
+      }
+    mu0 = inverse_from_cholesky(dealii::symmetrize(sus_interp)) * mu0;
+    for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         unsigned int var_index = sys.mu_base() + comp_index;
         if (index == var_index)
           {
-            double mu0          = 0.0;
-            double k_inv_interp = 0.0;
-            for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
-              {
-                unsigned int phase_index     = sys.order_params[op_index];
-                auto        &phase_comp_info = sys.phases.at(phase_index).comps.at(comp_index);
-                mu0 += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) *
-                       (phase_comp_info.c0 - phase_comp_info.c_min);
-                k_inv_interp += (eta_0[op_index] * eta_0[op_index] / sum_sq_eta) / phase_comp_info.k_well;
-              }
-            mu0 /= k_inv_interp;
-            scalar_value = mu0;
+            scalar_value = mu0[comp_index];
             return;
           }
       }

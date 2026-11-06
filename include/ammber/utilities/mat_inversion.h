@@ -5,7 +5,7 @@
 #include <deal.II/base/tensor.h>
 
 // Step 1: Cholesky decomposition
-template <unsigned n, typename number>
+template <int n, typename number>
 dealii::Tensor<2, n, number>
 cholesky_decompose(const dealii::SymmetricTensor<2, n, number> &A)
 {
@@ -39,7 +39,7 @@ cholesky_decompose(const dealii::SymmetricTensor<2, n, number> &A)
 }
 
 // Step 2: Forward substitution
-template <unsigned n, typename number>
+template <int n, typename number>
 dealii::Tensor<1, n, number>
 forward_substitution(const dealii::Tensor<2, n, number> &L, const dealii::Tensor<1, n, number> &b)
 {
@@ -49,15 +49,15 @@ forward_substitution(const dealii::Tensor<2, n, number> &L, const dealii::Tensor
       number sum = b[i];
       for (std::size_t j = 0; j < i; ++j)
         {
-          sum -= L(i, j) * y[j];
+          sum -= L[i][j] * y[j];
         }
-      y[i] = sum / L(i, i);
+      y[i] = sum / L[i][i];
     }
   return y;
 }
 
 // Step 3: Backward substitution (for L^T)
-template <unsigned n, typename number>
+template <int n, typename number>
 dealii::Tensor<1, n, number>
 backward_substitution(const dealii::Tensor<2, n, number> &L, const dealii::Tensor<1, n, number> &y)
 {
@@ -67,15 +67,15 @@ backward_substitution(const dealii::Tensor<2, n, number> &L, const dealii::Tenso
       number sum = y[i];
       for (int j = i + 1; j < n; ++j)
         {
-          sum -= L(j, i) * x[j]; // Note: L^T used here
+          sum -= L[j][i] * x[j]; // Note: L^T used here
         }
-      x[i] = sum / L(i, i);
+      x[i] = sum / L[i][i];
     }
   return x;
 }
 
 // Step 4: Compute A inverse
-template <unsigned n, typename number>
+template <int n, typename number>
 dealii::Tensor<2, n, number>
 inverse_from_cholesky(const dealii::SymmetricTensor<2, n, number> &A)
 {

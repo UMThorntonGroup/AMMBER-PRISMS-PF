@@ -364,3 +364,12 @@ operator*(const Variation<number, dim> &variation, const Dual<number, dim> &fiel
 {
   return field * variation;
 }
+
+namespace dealii
+{
+  template <typename number, unsigned int dim>
+  struct EnableIfScalar<Dual<number, dim>>
+  {
+    using type = Dual<number, dim>;
+  };
+} // namespace dealii

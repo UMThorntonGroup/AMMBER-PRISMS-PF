@@ -327,7 +327,7 @@ public:
       {
         PhaseData                                        &phase      = phase_data[phase_index];
         const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
-        const double                                     &D          = phase_info.D;
+        const CompMatrix<double>                         &D          = phase_info.D;
         const CompMatrix<double>                         &suscept    = phase_info.suscept;
         M += phase.h.val * phase_info.D * phase_info.suscept;
       }
@@ -438,10 +438,8 @@ public:
         ScalarValue c(0.0);
         for (uint phase_index = 0; phase_index < sys().num_phases(); phase_index++)
           {
-            const PhaseData                                          &phase = phase_data.at(phase_index);
-            const typename QuadraticSystem<num_comps>::PhaseCompInfo &comp_info =
-              sys().phases.at(phase_index).comps.at(comp_index);
-            c += phase.h.val * phase.c_phase[comp_index];
+            const PhaseData &phase = phase_data.at(phase_index);
+            c += phase.h.val * phase.c_phase[comp_index].val;
           }
         variable_list.set_value_term(sys().c_tot_base() + comp_index, c);
       }
