@@ -354,7 +354,7 @@ public:
         dmudt[comp_i].val = 0.0;
         for (uint comp_j = 0; comp_j < num_comps; comp_j++)
           {
-            dmudt[comp_i].vec += M * mu[comp_j].grad;
+            dmudt[comp_i].vec += M[comp_i][comp_j] * mu[comp_j].grad;
           }
       }
     // Partitioning term
@@ -363,7 +363,7 @@ public:
         CompVector<ScalarField> dcdeta;
         for (uint beta_index = 0; beta_index < phase_data.size(); beta_index++)
           {
-            dcdeta += op.dhdeta.at(beta_index) * (phase_data[beta_index].c_phase);
+            dcdeta += op.dhdeta.at(beta_index) * phase_data[beta_index].c_phase;
           }
         for (uint comp_index = 0; comp_index < num_comps; comp_index++)
           {
