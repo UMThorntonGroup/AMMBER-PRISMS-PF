@@ -46,8 +46,11 @@ struct Dual
     , grad(_grad)
   {}
 
-  explicit Dual(const int &initial_value = 0)
-    : val(number(double(initial_value)))
+  Dual() = default;
+
+  template <typename T>
+  explicit Dual(const T &initial_value)
+    : val(initial_value)
     , grad()
   {}
 
@@ -210,6 +213,14 @@ sqrt(const Dual<number, dim> &field)
   return Dual<number, dim> {sqrt_val, field.grad / (2.0 * sqrt_val)};
 }
 
+template <typename number, unsigned int dim, typename OStream>
+OStream &
+operator<<(OStream &stream, const Dual<number, dim> &field)
+{
+  stream << "Value: " << field.val << ", Gradient: " << field.grad;
+  return stream;
+}
+
 template <typename number, unsigned int dim>
 struct Variation
 {
@@ -224,8 +235,11 @@ struct Variation
     , vec(_vec)
   {}
 
-  explicit Variation(const int &initial_value = 0)
-    : val(number(double(initial_value)))
+  Variation() = default;
+
+  template <typename T>
+  explicit Variation(const T &initial_value)
+    : val(initial_value)
     , vec()
   {}
 
@@ -390,6 +404,14 @@ Variation<number, dim>
 operator*(const Variation<number, dim> &variation, const Dual<number, dim> &field)
 {
   return field * variation;
+}
+
+template <typename number, unsigned int dim, typename OStream>
+OStream &
+operator<<(OStream &stream, const Variation<number, dim> &field)
+{
+  stream << "Value: " << field.val << ", Vector: " << field.vec;
+  return stream;
 }
 
 namespace dealii
