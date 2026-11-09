@@ -382,6 +382,7 @@ public:
   void
   calculate_locals()
   {
+    calculate_c_phase();
     calculate_omega_phase();
     calculate_sum_sq_eta();
     calculate_h();
@@ -401,7 +402,7 @@ public:
       {
         variable_list.set_value_term(sys().mu_base() + comp_index,
                                      mu[comp_index].val + dmudt[comp_index].val * dt);
-        variable_list.set_gradient_term(sys().mu_base() + comp_index, -mu[comp_index].grad * dt);
+        variable_list.set_gradient_term(sys().mu_base() + comp_index, -dmudt[comp_index].vec * dt);
       }
     for (uint op_index = 0; op_index < sys().num_ops(); op_index++)
       {
