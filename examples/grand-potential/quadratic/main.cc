@@ -63,7 +63,7 @@ main(int argc, char *argv[])
   // Choose the timestep automatically based on the CFL condition
   const double dx               = get_min_dx(space);
   const double stability_factor = user_inputs.user_constants.get_double("stability_factor");
-  // time.dt = stability_factor * prismspf::cfl_timestep<dim, degree>(sys.max_gradient_coefficient(), dx);
+  time.dt = stability_factor * prismspf::cfl_timestep<dim, degree>(sys.max_gradient_coefficient(), dx);
   Logger::instance() << "Set dt = " << time.dt << "\n";
 
   // Set up refinement criteria for the order parameters

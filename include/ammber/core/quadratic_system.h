@@ -142,6 +142,28 @@ public:
     update_derived_parameters();
   }
 
+  double
+  max_gradient_coefficient() const
+  {
+    double max_gradient_coefficient = 0.0;
+    for (const auto &phase : phases)
+      {
+        auto eigen_pairs = dealii::eigenvectors(dealii::symmetrize(phase.D));
+        for (const auto &eigen_pair : eigen_pairs)
+          {
+            max_gradient_coefficient = std::max(max_gradient_coefficient, eigen_pair.first);
+          }
+        for (unsigned int i = 0; i < num_phases(); ++i)
+          {
+            for (unsigned int j = 0; j < num_phases(); ++j)
+              {
+                max_gradient_coefficient = std::max(max_gradient_coefficient, mu_int(i, j) * sigma(i, j));
+              }
+          }
+      }
+    return max_gradient_coefficient;
+  }
+
   /**
    * @brief Non-dimensionalize the parameters using the provided unit scales
    */
