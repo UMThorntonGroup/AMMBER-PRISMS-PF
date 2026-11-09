@@ -41,7 +41,6 @@ public:
   struct Phase
   {
     std::string        name;
-    double             mu_int = 0.0;
     CompMatrix<double> D, A, suscept;
     CompVector<double> B, c_ref, c0, mu0;
     double             C = 0.0;
@@ -53,6 +52,7 @@ public:
   std::string                solution_component;
   std::vector<unsigned int>  order_params;
   dealii::FullMatrix<double> sigma;
+  dealii::FullMatrix<double> mu_int;
   double                     Vm    = 0.0;
   double                     l_int = 0.0;
 
@@ -93,14 +93,13 @@ public:
     for (const auto &phase_json : j.at("phases"))
       {
         Phase phase;
-        phase.name   = phase_json.at("name").get<std::string>();
-        phase.mu_int = phase_json.at("mu_int").get<double>();
-        phase.C      = phase_json.at("C").get<double>();
-        phase.D      = parse_component_matrix(phase_json.at("D"));
-        phase.A      = parse_component_matrix(phase_json.at("A"));
-        phase.B      = parse_vector(phase_json.at("B"));
-        phase.c_ref  = parse_vector(phase_json.at("c_ref"));
-        phase.c0     = parse_vector(phase_json.at("c0"));
+        phase.name  = phase_json.at("name").get<std::string>();
+        phase.C     = phase_json.at("C").get<double>();
+        phase.D     = parse_component_matrix(phase_json.at("D"));
+        phase.A     = parse_component_matrix(phase_json.at("A"));
+        phase.B     = parse_vector(phase_json.at("B"));
+        phase.c_ref = parse_vector(phase_json.at("c_ref"));
+        phase.c0    = parse_vector(phase_json.at("c0"));
 
         if (std::find(phase_names.begin(), phase_names.end(), phase.name) != phase_names.end())
           {
@@ -110,7 +109,8 @@ public:
         phases.push_back(std::move(phase));
       }
 
-    sigma = parse_sigma_matrix(j.at("sigma"), phases.size());
+    sigma  = parse_phase_matrix(j.at("sigma"), phases.size());
+    mu_int = parse_phase_matrix(j.at("mu_int"), phases.size());
 
     order_params.clear();
     for (const auto &phase_name_json : j.at("order_parameters"))
@@ -160,9 +160,9 @@ public:
     Vm /= (l0 * l0 * l0);
     l_int /= l0;
     sigma /= (E0 * l0);
+    mu_int /= (l0 / (E0 * t0));
     for (Phase &phase : phases)
       {
-        phase.mu_int /= (l0 / (E0 * t0));
         phase.D /= ((l0 * l0) / t0);
         phase.A /= E0;
         phase.B /= E0;
@@ -187,19 +187,18 @@ public:
     for (const Phase &phase : phases)
       {
         std::cout << std::setw(col_width) << phase.name << "\n";
-        std::cout << std::setw(col_width) << "mu_int:" << std::setw(col_width) << phase.mu_int << "\n";
         const auto print_matrix = [&](const char *name, const CompMatrix<double> &matrix)
-        {
-          std::cout << name << "\n";
-          for (unsigned int i = 0; i < num_comps; ++i)
-            {
-              for (unsigned int j = 0; j < num_comps; ++j)
-                {
-                  std::cout << std::setw(col_width) << matrix[i][j];
-                }
-              std::cout << "\n";
-            }
-        };
+          {
+            std::cout << name << "\n";
+            for (unsigned int i = 0; i < num_comps; ++i)
+              {
+                for (unsigned int j = 0; j < num_comps; ++j)
+                  {
+                    std::cout << std::setw(col_width) << matrix[i][j];
+                  }
+                std::cout << "\n";
+              }
+          };
         print_matrix("D:", phase.D);
         print_matrix("A:", phase.A);
         std::cout << "B:";
@@ -226,6 +225,15 @@ public:
         for (std::size_t j = 0; j < sigma.size()[1]; ++j)
           {
             std::cout << std::setw(col_width) << sigma(i, j);
+          }
+        std::cout << "\n";
+      }
+    std::cout << "\nmu_int:\n";
+    for (std::size_t i = 0; i < mu_int.size()[0]; ++i)
+      {
+        for (std::size_t j = 0; j < mu_int.size()[1]; ++j)
+          {
+            std::cout << std::setw(col_width) << mu_int(i, j);
           }
         std::cout << "\n";
       }
@@ -548,7 +556,7 @@ private:
   }
 
   static dealii::FullMatrix<double>
-  parse_sigma_matrix(const nlohmann::json &j, const std::size_t size)
+  parse_phase_matrix(const nlohmann::json &j, const std::size_t size)
   {
     if (!j.is_array() || j.size() != size)
       {

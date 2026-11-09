@@ -118,16 +118,21 @@ public:
     const double sum_sq_eta = sum_sq(eta_0) + 1e-8;
     // TODO: fix
     typename QuadraticSystem<num_comps>::template CompVector<double> mu0;
+    typename QuadraticSystem<num_comps>::template CompVector<double> B_interp;
+    typename QuadraticSystem<num_comps>::template CompVector<double> c_ref_interp;
+    typename QuadraticSystem<num_comps>::template CompVector<double> c0_interp;
     typename QuadraticSystem<num_comps>::template CompMatrix<double> sus_interp;
     for (unsigned int op_index = 0; op_index < sys.num_ops(); op_index++)
       {
         unsigned int phase_index = sys.order_params[op_index];
         const auto  &phase_info  = sys.phases[phase_index];
         number       h           = eta_0[op_index] * eta_0[op_index] / sum_sq_eta;
-        mu0 += h * phase_info.c0;
+        B_interp += h * phase_info.B;
+        c_ref_interp += h * phase_info.c_ref;
+        c0_interp += h * phase_info.c0;
         sus_interp += h * phase_info.suscept;
       }
-    mu0 = inverse_from_cholesky(dealii::symmetrize(sus_interp)) * mu0;
+    mu0 = inverse_from_cholesky(dealii::symmetrize(sus_interp)) * ((c0_interp - c_ref_interp)) + B_interp;
     for (uint comp_index = 0; comp_index < num_comps; comp_index++)
       {
         unsigned int var_index = sys.mu_base() + comp_index;

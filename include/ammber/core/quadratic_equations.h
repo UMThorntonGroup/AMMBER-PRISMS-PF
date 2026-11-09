@@ -181,8 +181,7 @@ public:
       {
         const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
         PhaseData                                        &phase      = phase_data[phase_index];
-        phase.omega.val                                              = phase_info.C;
-        auto delta_mu                                                = mu - phase_info.B;
+        CompVector<ScalarField>                           delta_mu   = mu - phase_info.B;
         phase.c_phase = phase_info.c_ref + phase_info.suscept * delta_mu;
       }
   }
@@ -196,11 +195,12 @@ public:
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
         const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
-        PhaseData                                        &phase      = phase_data[phase_index];
-        phase.omega.val                                              = phase_info.C;
-        auto delta_mu                                                = mu - phase_info.B;
-        auto delta_c                                                 = phase_info.suscept * delta_mu;
-        phase.omega += -0.5 * delta_mu * delta_c - mu * phase.c_phase;
+
+        PhaseData &phase                 = phase_data[phase_index];
+        phase.omega.val                  = phase_info.C;
+        CompVector<ScalarField> delta_mu = mu - phase_info.B;
+        CompVector<ScalarField> delta_c  = phase_info.suscept * delta_mu;
+        phase.omega += -0.5 * delta_mu * delta_c - mu * phase_info.c_ref;
       }
   }
 
@@ -277,8 +277,8 @@ public:
               {
                 continue; // Skip self-interaction
               }
-            double mu_ab = 2.0 * (sys().phases[alpha_index].mu_int * sys().phases[beta_index].mu_int) /
-                           (sys().phases[alpha_index].mu_int + sys().phases[beta_index].mu_int);
+            double mu_ab =
+              0.5 * (sys().mu_int(alpha_index, beta_index) + sys().mu_int(beta_index, alpha_index));
             double L_ab = 4.0 * mu_ab / sys().l_int / 3.0;
             double sigma_ab =
               0.5 * (sys().sigma(alpha_index, beta_index) + sys().sigma(beta_index, alpha_index));
