@@ -7,6 +7,8 @@
 #include <prismspf/utilities/logger.h>
 #include <prismspf/utilities/utilities.h>
 
+#include <deal.II/base/vectorization.h>
+
 #include "custom_pde.h"
 
 #include <limits>
@@ -39,13 +41,13 @@ main(int argc, char *argv[])
 
   constexpr unsigned int dim       = 2;
   constexpr unsigned int degree    = 1;
-  constexpr unsigned int num_comps = 2;
+  constexpr unsigned int num_comps = 1;
   using number                     = float;
 
   QuadraticSystem<num_comps> sys;
-  std::ifstream              file("system.json");
+  std::ifstream              file("system_binary.json");
   if (!file.is_open())
-    throw std::runtime_error("Could not open system.json");
+    throw std::runtime_error("Could not open system");
   nlohmann::json model_parameters;
   file >> model_parameters;
   sys.from_json(model_parameters);

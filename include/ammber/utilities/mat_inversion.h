@@ -79,6 +79,10 @@ template <int n, typename number>
 dealii::Tensor<2, n, number>
 inverse_from_cholesky(const dealii::SymmetricTensor<2, n, number> &A)
 {
+  if constexpr (n <= 3)
+    {
+      return dealii::invert(A);
+    }
   dealii::Tensor<2, n, number> L = cholesky_decompose(A);
 
   dealii::Tensor<2, n, number> Ainv;
