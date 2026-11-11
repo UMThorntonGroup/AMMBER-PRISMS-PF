@@ -6,7 +6,7 @@ include(CMakeFindDependencyMacro)
 # PRISMS-PF
 find_dependency(
   PRISMS-PF
-  4.0
+  4.1.0
   HINTS
   ${PRISMS_PF_DIR}
   $ENV{PRISMS_PF_DIR}
