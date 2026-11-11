@@ -4,7 +4,7 @@
 
 struct Scales
 {
-  double length_scale, time_scale, energy_scale;
+  double length_scale = 1.0, time_scale = 1.0, energy_scale = 1.0;
 
   void
   from_json(const nlohmann::json &j)

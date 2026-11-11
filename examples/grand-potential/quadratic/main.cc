@@ -41,25 +41,33 @@ main(int argc, char *argv[])
 
   constexpr unsigned int dim       = 2;
   constexpr unsigned int degree    = 1;
-  constexpr unsigned int num_comps = 1;
+  constexpr unsigned int num_comps = 2;
   using number                     = float;
 
   QuadraticSystem<num_comps> sys;
-  std::ifstream              file("system_binary.json");
+  std::ifstream              file("system.json");
   if (!file.is_open())
     throw std::runtime_error("Could not open system");
   nlohmann::json model_parameters;
   file >> model_parameters;
   sys.from_json(model_parameters);
+  Scales scales;
+  scales.from_json(model_parameters);
+  sys.nondimensionalize(scales);
 
   std::vector<FieldAttributes> field_attributes = sys.load_fields();
   std::vector<SolveBlock>      solve_blocks     = sys.load_blocks();
 
   // Set up user inputs
   UserInputParameters<dim>    user_inputs(cli_options.get_parameters_filename());
-  SpatialDiscretization<dim> &space = user_inputs.spatial_discretization;
-  TemporalDiscretization     &time  = user_inputs.temporal_discretization;
+  UserConstants<dim>         &user_constants = user_inputs.user_constants;
+  SpatialDiscretization<dim> &space          = user_inputs.spatial_discretization;
+  TemporalDiscretization     &time           = user_inputs.temporal_discretization;
 
+  // Nondimensionalize the space
+  space.rectangular_mesh.size /= scales.length_scale;
+  space.rectangular_mesh.lower_bound /= scales.length_scale;
+  user_constants.get_double("r0") /= scales.length_scale;
   // Choose the timestep automatically based on the CFL condition
   const double dx               = get_min_dx(space);
   const double stability_factor = user_inputs.user_constants.get_double("stability_factor");

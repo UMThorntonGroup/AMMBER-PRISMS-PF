@@ -1,9 +1,9 @@
 
 subsection Rectangular mesh
-  set x lower bound = -200e-9
-  set y lower bound = -200e-9
-  set x size = 400e-9
-  set y size = 400e-9
+  set x lower bound = -50e-7
+  set y lower bound = -50e-7
+  set x size = 100e-7
+  set y size = 100e-7
 end
 
 set global refinement = 9
@@ -26,7 +26,7 @@ end
 # =================================================================================
 
 # Particle radius
-set Model constant r0 = 40e-9, DOUBLE
+set Model constant r0 = 20e-7, DOUBLE
 
 # =================================================================================
 # Set the automatic parameter selection constants

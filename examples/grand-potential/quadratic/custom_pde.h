@@ -57,8 +57,9 @@ public:
 
     // TODO: Populate eta0 with the initial condition for the order parameters
     std::vector<number> eta0(sys.num_ops(), 0.0);
-    eta0[0] = 1.0 - circular;
-    eta0[1] = circular;
+    eta0[0] = 0.5 * (1.0 - circular);
+    eta0[1] = 0.5 * (1.0 - circular);
+    eta0[2] = circular;
 
     // Submit eta0 to utility that sets ICs
     submit_ic_from_fields(eta0, index, scalar_value);
