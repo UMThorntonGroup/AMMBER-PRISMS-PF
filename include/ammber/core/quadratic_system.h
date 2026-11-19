@@ -72,6 +72,12 @@ public:
 
   /**
    * @brief Load the parameters from a JSON object
+   *
+   * "phases" is an object mapping each phase name to its parameters (C, D, A, B,
+   * c_ref, c0). "phase_order" lists every phase name once and sets the phase
+   * indices, i.e. the row/column order of "sigma" and "mu_int". If "phase_order"
+   * is omitted, phases are ordered by name (the key order of nlohmann::json).
+   *
    * @param j JSON object containing the parameters
    */
   void
@@ -88,12 +94,46 @@ public:
         throw std::invalid_argument("Quadratic system component count does not match its template");
       }
 
+    const nlohmann::json &phases_json = j.at("phases");
+    if (!phases_json.is_object())
+      {
+        throw std::invalid_argument("Quadratic system \"phases\" must be an object keyed by phase name");
+      }
+
+    std::vector<std::string> order;
+    if (j.contains("phase_order"))
+      {
+        order = j.at("phase_order").get<std::vector<std::string>>();
+      }
+    else
+      {
+        for (const auto &[phase_name, phase_json] : phases_json.items())
+          {
+            order.push_back(phase_name);
+          }
+      }
+    if (order.size() != phases_json.size())
+      {
+        throw std::invalid_argument("Quadratic system \"phase_order\" must list each of the " +
+                                    std::to_string(phases_json.size()) + " phases exactly once");
+      }
+
     phases.clear();
     phase_names.clear();
-    for (const auto &phase_json : j.at("phases"))
+    for (const std::string &phase_name : order)
       {
+        if (!phases_json.contains(phase_name))
+          {
+            throw std::invalid_argument("Phase in \"phase_order\" has no entry in \"phases\": " + phase_name);
+          }
+        if (std::find(phase_names.begin(), phase_names.end(), phase_name) != phase_names.end())
+          {
+            throw std::invalid_argument("Duplicate phase name in \"phase_order\": " + phase_name);
+          }
+        const nlohmann::json &phase_json = phases_json.at(phase_name);
+
         Phase phase;
-        phase.name  = phase_json.at("name").get<std::string>();
+        phase.name  = phase_name;
         phase.C     = phase_json.at("C").get<double>();
         phase.D     = parse_component_matrix(phase_json.at("D"));
         phase.A     = parse_component_matrix(phase_json.at("A"));
@@ -101,10 +141,6 @@ public:
         phase.c_ref = parse_vector(phase_json.at("c_ref"));
         phase.c0    = parse_vector(phase_json.at("c0"));
 
-        if (std::find(phase_names.begin(), phase_names.end(), phase.name) != phase_names.end())
-          {
-            throw std::invalid_argument("Duplicate phase name in quadratic system: " + phase.name);
-          }
         phase_names.push_back(phase.name);
         phases.push_back(std::move(phase));
       }
