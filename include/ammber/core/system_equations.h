@@ -83,7 +83,7 @@ public:
    */
   SystemContainer(const ParaboloidSystem &_sys, const UserInputParameters<dim> &inputs)
     : sys_ptr(&_sys)
-    , phase_data(sys().phases.size())
+    , phase_data(sys().num_phases())
     , comp_data(sys().num_comps())
     , op_data(sys().num_ops())
     , sum_sq_eta({})

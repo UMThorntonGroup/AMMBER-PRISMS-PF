@@ -2,6 +2,30 @@
 
 #include <deal.II/base/tensor.h>
 
+template <typename T>
+struct is_dealii_tensor
+{
+  static constexpr bool value = false;
+};
+
+template <int rank, int dim, typename T>
+struct is_dealii_tensor<dealii::Tensor<rank, dim, T>>
+{
+  static constexpr bool value = true;
+};
+
+template <int dim, typename T>
+struct is_dealii_tensor<dealii::Point<dim, T>>
+{
+  static constexpr bool value = true;
+};
+
+template <int rank, int dim, typename T>
+struct is_dealii_tensor<dealii::SymmetricTensor<rank, dim, T>>
+{
+  static constexpr bool value = true;
+};
+
 /**
  * @brief Class for holding fields and their spatial derivatives OR variations in their
  * strong form
@@ -22,8 +46,11 @@ struct Dual
     , grad(_grad)
   {}
 
-  explicit Dual(const int &initial_value = 0)
-    : val(number(double(initial_value)))
+  Dual() = default;
+
+  template <typename T>
+  explicit Dual(const T &initial_value)
+    : val(initial_value)
     , grad()
   {}
 
@@ -109,7 +136,7 @@ struct Dual
     return Dual<number, dim>(val * other.val, (val * other.grad) + (grad * other.val));
   }
 
-  template <typename other_number>
+  template <typename other_number, typename = std::enable_if<!is_dealii_tensor<other_number>::value>::type>
   Dual<number, dim> &
   operator*=(const other_number &other)
   {
@@ -159,7 +186,10 @@ operator-(const other_number &other, const Dual<number, dim> &field)
   return -field + other;
 }
 
-template <typename number, unsigned int dim, typename other_number>
+template <typename number,
+          unsigned int dim,
+          typename other_number,
+          typename = std::enable_if<!is_dealii_tensor<other_number>::value>::type>
 Dual<number, dim>
 operator*(const other_number &other, const Dual<number, dim> &field)
 {
@@ -183,6 +213,14 @@ sqrt(const Dual<number, dim> &field)
   return Dual<number, dim> {sqrt_val, field.grad / (2.0 * sqrt_val)};
 }
 
+template <typename number, unsigned int dim, typename OStream>
+OStream &
+operator<<(OStream &stream, const Dual<number, dim> &field)
+{
+  stream << "Value: " << field.val << ", Gradient: " << field.grad;
+  return stream;
+}
+
 template <typename number, unsigned int dim>
 struct Variation
 {
@@ -197,8 +235,11 @@ struct Variation
     , vec(_vec)
   {}
 
-  explicit Variation(const int &initial_value = 0)
-    : val(number(double(initial_value)))
+  Variation() = default;
+
+  template <typename T>
+  explicit Variation(const T &initial_value)
+    : val(initial_value)
     , vec()
   {}
 
@@ -364,3 +405,20 @@ operator*(const Variation<number, dim> &variation, const Dual<number, dim> &fiel
 {
   return field * variation;
 }
+
+template <typename number, unsigned int dim, typename OStream>
+OStream &
+operator<<(OStream &stream, const Variation<number, dim> &field)
+{
+  stream << "Value: " << field.val << ", Vector: " << field.vec;
+  return stream;
+}
+
+namespace dealii
+{
+  template <typename number, unsigned int dim>
+  struct EnableIfScalar<Dual<number, dim>>
+  {
+    using type = Dual<number, dim>;
+  };
+} // namespace dealii

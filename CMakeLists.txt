@@ -40,7 +40,7 @@ message(STATUS "Configuring AMMBER v${AMMBER_VERSION}")
 message(STATUS "Configuring external libraries")
 
 # Find PRISMS-PF
-find_package(PRISMS-PF 4.0 REQUIRED HINTS ${PRISMS_PF_DIR} $ENV{PRISMS_PF_DIR})
+find_package(PRISMS-PF 4.1.0 REQUIRED HINTS ${PRISMS_PF_DIR} $ENV{PRISMS_PF_DIR})
 
 #=========================================================
 # Configure targets
