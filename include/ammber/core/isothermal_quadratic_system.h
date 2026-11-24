@@ -106,10 +106,13 @@ public:
   double                     Vm    = 0.0;
   double                     l_int = 0.0;
 
-  /**
-   * @brief Constructor
-   */
   IsothermalQuadraticSystem() = default;
+
+  explicit IsothermalQuadraticSystem(unsigned int num_phases)
+    : sigma(num_phases, num_phases)
+    , mu_int(num_phases, num_phases)
+    , phases(num_phases)
+  {}
 
   /**
    * @brief JSON Constructor

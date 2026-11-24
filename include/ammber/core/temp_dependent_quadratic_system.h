@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ammber/core/isothermal_quadratic_system.h>
 #include <ammber/core/scales.h>
 #include <ammber/utilities/mat_inversion.h>
 
@@ -8,6 +9,8 @@
 
 #include <deal.II/base/tensor.h>
 #include <deal.II/lac/full_matrix.h>
+
+#include "isothermal_quadratic_system.h"
 
 #include <algorithm>
 #include <iomanip>
@@ -44,7 +47,7 @@ public:
   struct Phase
   {
     std::string        name;
-    CompMatrix<double> D, A, suscept;
+    CompMatrix<double> D, A;
     CompMatrix<double> Q, A1;
     CompVector<double> B, c_ref, c0;
     CompVector<double> B1, c_ref_1;
@@ -106,6 +109,19 @@ public:
     {
       return C + C1 * temperature;
     }
+
+    typename IsothermalQuadraticSystem<num_comps>::Phase
+    get_isothermal_phase(double temperature) const
+    {
+      typename IsothermalQuadraticSystem<num_comps>::Phase iso_phase;
+      iso_phase.name  = name;
+      iso_phase.A     = get_A(temperature);
+      iso_phase.B     = get_B(temperature);
+      iso_phase.C     = get_C(temperature);
+      iso_phase.D     = get_D(temperature);
+      iso_phase.c_ref = get_c_ref(temperature);
+      iso_phase.c0    = get_c0();
+    }
   };
 
   std::vector<std::string>   comp_names;
@@ -121,10 +137,13 @@ public:
 
   static constexpr double gas_constant = 8.31446261815324; // J / (mol K)
 
-  /**
-   * @brief Constructor
-   */
   TemperatureDependentQuadraticSystem() = default;
+
+  explicit TemperatureDependentQuadraticSystem(unsigned int num_phases)
+    : sigma(num_phases, num_phases)
+    , mu_int(num_phases, num_phases)
+    , phases(num_phases)
+  {}
 
   /**
    * @brief JSON Constructor
@@ -663,6 +682,32 @@ public:
   {
     using std::tanh;
     return 0.5 * (1.0 + tanh(2.0 * sdf / l_int));
+  }
+
+  IsothermalQuadraticSystem<num_comps>
+  get_isothermal_system(double temperature) const
+  {
+    IsothermalQuadraticSystem<num_comps> iso_sys(num_phases());
+    iso_sys.phase_names        = phase_names;
+    iso_sys.comp_names         = comp_names;
+    iso_sys.solution_component = solution_component;
+    iso_sys.order_params       = order_params;
+    for (unsigned int phase_index = 0; phase_index < num_phases(); ++phase_index)
+      {
+        iso_sys.phases[phase_index] = phases[phase_index].get_isothermal_phase(temperature);
+      }
+    iso_sys.sigma  = sigma;
+    iso_sys.mu_int = mu_int;
+    for (unsigned int i = 0; i < num_phases(); ++i)
+      {
+        for (unsigned int j = 0; j < num_phases(); ++j)
+          {
+            iso_sys.sigma  = sigma(i, j);
+            iso_sys.mu_int = mu_int(i, j);
+          }
+      }
+    iso_sys.update_derived_parameters();
+    return iso_sys;
   }
 
 private:
