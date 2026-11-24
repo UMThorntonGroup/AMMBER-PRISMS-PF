@@ -1,13 +1,14 @@
 #pragma once
 
+#include <ammber/core/isothermal_quadratic_system.h>
 #include <ammber/core/quadratic_pde.h>
 
 #include <prismspf/core/pde_operator_base.h>
 
 PRISMS_PF_BEGIN_NAMESPACE
 
-template <unsigned int dim, unsigned int degree, typename number, unsigned int num_comps>
-class CustomPDE : public QuadraticGrandPotentialPDE<dim, degree, number, num_comps>
+template <unsigned int dim, unsigned int degree, typename number, typename system_type>
+class CustomPDE : public QuadraticGrandPotentialPDE<dim, degree, number, system_type>
 {
 public:
   using ScalarValue = dealii::VectorizedArray<number>;
@@ -16,8 +17,8 @@ public:
   using VectorValue = dealii::Tensor<1, dim, ScalarValue>;
   using VectorGrad  = dealii::Tensor<2, dim, ScalarValue>;
   using VectorHess  = dealii::Tensor<3, dim, ScalarValue>;
-  using QuadraticGrandPotentialPDE<dim, degree, number, num_comps>::sys;
-  using QuadraticGrandPotentialPDE<dim, degree, number, num_comps>::submit_ic_from_fields;
+  using QuadraticGrandPotentialPDE<dim, degree, number, system_type>::sys;
+  using QuadraticGrandPotentialPDE<dim, degree, number, system_type>::submit_ic_from_fields;
   using PDEOperatorBase<dim, degree, number>::get_user_inputs;
   using PDEOperatorBase<dim, degree, number>::get_pf_tools;
 
@@ -26,10 +27,10 @@ public:
   /**
    * @brief Constructor.
    */
-  CustomPDE(const UserInputParameters<dim>   &_user_inputs,
-            PhaseFieldTools<dim>             &_pf_tools,
-            const QuadraticSystem<num_comps> &_sys)
-    : QuadraticGrandPotentialPDE<dim, degree, number, num_comps>(_user_inputs, _pf_tools, _sys)
+  CustomPDE(const UserInputParameters<dim> &_user_inputs,
+            PhaseFieldTools<dim>           &_pf_tools,
+            const system_type              &_sys)
+    : QuadraticGrandPotentialPDE<dim, degree, number, system_type>(_user_inputs, _pf_tools, _sys)
     , r0(get_user_inputs().user_constants.get_double("r0"))
   {}
 
@@ -62,7 +63,7 @@ public:
     eta0[2] = circular;
 
     // Submit eta0 to utility that sets ICs
-    submit_ic_from_fields(eta0, index, scalar_value);
+    submit_ic_from_fields(eta0, index, scalar_value, 0.0);
   }
 
   /**
