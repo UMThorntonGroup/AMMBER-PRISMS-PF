@@ -3,6 +3,7 @@
 #include <ammber/utilities/auto_diff.h>
 
 #include <deal.II/base/tensor.h>
+#include <deal.II/base/symmetric_tensor.h>
 
 // Step 1: Cholesky decomposition
 template <int n, typename number>

@@ -1,6 +1,8 @@
 #pragma once
 
+#include <ammber/core/isothermal_quadratic_system.h>
 #include <ammber/core/scales.h>
+#include <ammber/utilities/mat_inversion.h>
 
 #include <prismspf/core/field_attributes.h>
 #include <prismspf/core/solve_block.h>
@@ -24,10 +26,12 @@ using namespace prismspf;
  * @brief Class containing the thermodynamic and kinetic parameters needed for the grand
  * potential based model using second-order polynomials
  */
-template <unsigned num_comps>
-class QuadraticSystem
+template <unsigned _num_comps>
+class TemperatureDependentQuadraticSystem
 {
 public:
+  static constexpr unsigned int num_comps = _num_comps;
+
   template <typename T>
   using CompVector = dealii::Tensor<1, num_comps, T>;
   template <typename T>
@@ -41,31 +45,108 @@ public:
   struct Phase
   {
     std::string        name;
-    CompMatrix<double> D, A, suscept;
-    CompVector<double> B, c_ref, c0, mu0;
-    double             C = 0.0;
+    CompMatrix<double> D, A;
+    CompMatrix<double> Q, A1;
+    CompVector<double> B, c_ref, c0;
+    CompVector<double> B1, c_ref_1;
+    double             C  = 0.0;
+    double             C1 = 0.0;
+
+    template <typename T>
+    CompMatrix<T>
+    get_D(const T &temperature) const
+    {
+      CompMatrix<T> full_D;
+      for (unsigned int i = 0; i < num_comps; i++)
+        {
+          for (unsigned int j = 0; j < num_comps; j++)
+            {
+              full_D[i][j] = D[i][j] * std::exp(-Q[i][j] / (gas_constant * temperature));
+            }
+        }
+      return full_D;
+    }
+
+    template <typename T>
+    CompMatrix<T>
+    get_A(const T &temperature) const
+    {
+      return A + A1 * temperature;
+    }
+
+    template <typename T>
+    CompMatrix<T>
+    get_suscept(const T &temperature) const
+    {
+      return inverse_from_cholesky(dealii::symmetrize(get_A(temperature)));
+    }
+
+    template <typename T>
+    CompVector<T>
+    get_B(const T &temperature) const
+    {
+      return B + B1 * temperature;
+    }
+
+    template <typename T>
+    CompVector<T>
+    get_c_ref(const T &temperature) const
+    {
+      return c_ref + c_ref_1 * temperature;
+    }
+
+    const CompVector<double> &
+    get_c0() const
+    {
+      return c0;
+    }
+
+    template <typename T>
+    T
+    get_C(const T &temperature) const
+    {
+      return C + C1 * temperature;
+    }
+
+    typename IsothermalQuadraticSystem<num_comps>::Phase
+    get_isothermal_phase(double temperature) const
+    {
+      typename IsothermalQuadraticSystem<num_comps>::Phase iso_phase;
+      iso_phase.name  = name;
+      iso_phase.A     = get_A(temperature);
+      iso_phase.B     = get_B(temperature);
+      iso_phase.C     = get_C(temperature);
+      iso_phase.D     = get_D(temperature);
+      iso_phase.c_ref = get_c_ref(temperature);
+      iso_phase.c0    = get_c0();
+    }
   };
 
   std::vector<std::string>   comp_names;
   std::vector<Phase>         phases;
-  std::vector<std::string>   phase_names;
   std::string                solution_component;
   std::vector<unsigned int>  order_params;
   dealii::FullMatrix<double> sigma;
   dealii::FullMatrix<double> mu_int;
+  dealii::FullMatrix<double> mu_int_Q;
   double                     Vm    = 0.0;
   double                     l_int = 0.0;
 
-  /**
-   * @brief Constructor
-   */
-  QuadraticSystem() = default;
+  static constexpr double gas_constant = 8.31446261815324; // J / (mol K)
+
+  TemperatureDependentQuadraticSystem() = default;
+
+  explicit TemperatureDependentQuadraticSystem(unsigned int num_phases)
+    : sigma(num_phases, num_phases)
+    , mu_int(num_phases, num_phases)
+    , phases(num_phases)
+  {}
 
   /**
    * @brief JSON Constructor
    * @param j JSON object containing the parameters
    */
-  explicit QuadraticSystem(const nlohmann::json &j)
+  explicit TemperatureDependentQuadraticSystem(const nlohmann::json &j)
   {
     from_json(j);
   }
@@ -119,7 +200,7 @@ public:
       }
 
     phases.clear();
-    phase_names.clear();
+    std::vector<std::string> phase_names;
     for (const std::string &phase_name : order)
       {
         if (!phases_json.contains(phase_name))
@@ -133,20 +214,27 @@ public:
         const nlohmann::json &phase_json = phases_json.at(phase_name);
 
         Phase phase;
-        phase.name  = phase_name;
-        phase.C     = phase_json.at("C").get<double>();
-        phase.D     = parse_component_matrix(phase_json.at("D"));
-        phase.A     = parse_component_matrix(phase_json.at("A"));
-        phase.B     = parse_vector(phase_json.at("B"));
-        phase.c_ref = parse_vector(phase_json.at("c_ref"));
-        phase.c0    = parse_vector(phase_json.at("c0"));
+        phase.name = phase_name;
+        phase.C    = phase_json.at("C").get<double>();
+        phase.C1   = phase_json.at("C1").get<double>();
+        phase.D    = parse_component_matrix(phase_json.at("D"));
+        phase.Q    = parse_component_matrix(phase_json.at("Q"));
+        phase.A    = parse_component_matrix(phase_json.at("A"));
+        phase.A1   = parse_component_matrix(phase_json.at("A1"));
+        phase.B    = parse_vector(phase_json.at("B"));
+        phase.B1   = parse_vector(phase_json.at("B1"));
+
+        phase.c_ref   = parse_vector(phase_json.at("c_ref"));
+        phase.c_ref_1 = parse_vector(phase_json.at("c_ref_1"));
+        phase.c0      = parse_vector(phase_json.at("c0"));
 
         phase_names.push_back(phase.name);
         phases.push_back(std::move(phase));
       }
 
-    sigma  = parse_phase_matrix(j.at("sigma"), phases.size());
-    mu_int = parse_phase_matrix(j.at("mu_int"), phases.size());
+    sigma    = parse_phase_matrix(j.at("sigma"), phases.size());
+    mu_int   = parse_phase_matrix(j.at("mu_int"), phases.size());
+    mu_int_Q = parse_phase_matrix(j.at("mu_int_Q"), phases.size());
 
     order_params.clear();
     for (const auto &phase_name_json : j.at("order_parameters"))
@@ -172,6 +260,10 @@ public:
             phase.A /= Vm;
             phase.B /= Vm;
             phase.C /= Vm;
+
+            phase.A1 /= Vm;
+            phase.B1 /= Vm;
+            phase.C1 /= Vm;
           }
       }
 
@@ -225,6 +317,10 @@ public:
         phase.A /= E0;
         phase.B /= E0;
         phase.C /= E0;
+
+        phase.A1 /= E0;
+        phase.B1 /= E0;
+        phase.C1 /= E0;
       }
     update_derived_parameters();
   }
@@ -258,23 +354,34 @@ public:
               }
           };
         print_matrix("D:", phase.D);
-        print_matrix("A:", phase.A);
+        print_matrix("Q:", phase.Q);
+
+        std::cout << "A:" << "\n";
+        for (unsigned int i = 0; i < num_comps; ++i)
+          {
+            for (unsigned int j = 0; j < num_comps; ++j)
+              {
+                std::cout << std::setw(col_width) << phase.A[i][j] << "+" << phase.A1[i, j] << "*T";
+              }
+            std::cout << "\n";
+          }
+
         std::cout << "B:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
-            std::cout << std::setw(col_width) << phase.B[i];
+            std::cout << std::setw(col_width) << phase.B[i] << " + " << phase.B1[i] << "*T";
           }
         std::cout << "\nc_ref:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
-            std::cout << std::setw(col_width) << phase.c_ref[i];
+            std::cout << std::setw(col_width) << phase.c_ref[i] << " + " << phase.c_ref_1[i] << "*T";
           }
         std::cout << "\nc0:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
             std::cout << std::setw(col_width) << phase.c0[i];
           }
-        std::cout << "\nC:" << std::setw(col_width) << phase.C << "\n\n";
+        std::cout << "\nC:" << std::setw(col_width) << phase.C << " + " << phase.C1 << "*T\n\n";
       }
 
     std::cout << "sigma:\n";
@@ -295,6 +402,15 @@ public:
           }
         std::cout << "\n";
       }
+    std::cout << "\nmu_int_Q:\n";
+    for (std::size_t i = 0; i < mu_int_Q.size()[0]; ++i)
+      {
+        for (std::size_t j = 0; j < mu_int_Q.size()[1]; ++j)
+          {
+            std::cout << std::setw(col_width) << mu_int_Q(i, j);
+          }
+        std::cout << "\n";
+      }
   }
 
   /**
@@ -309,7 +425,7 @@ public:
     for (uint phase_index : order_params)
       {
         const std::string var_name =
-          phase_names.at(phase_index) + "_" + std::to_string(phase_counter[phase_index]++);
+          phases[phase_index].name + "_" + std::to_string(phase_counter[phase_index]++);
         op_names.push_back(var_name);
       }
     return op_names;
@@ -335,29 +451,21 @@ public:
 
   void
   update_derived_parameters()
-  {
-    for (Phase &phase : phases)
-      {
-        phase.mu0 = phase.A * (phase.c0 - phase.c_ref) + phase.B;
+  {}
 
-        dealii::FullMatrix<double> helper(num_comps);
-        for (unsigned int i = 0; i < num_comps; ++i)
-          {
-            for (unsigned int j = 0; j < num_comps; ++j)
-              {
-                helper(i, j) = phase.A[i][j];
-              }
-          }
-        dealii::FullMatrix<double> helper_inv(num_comps);
-        helper_inv.invert(helper);
-        for (unsigned int i = 0; i < num_comps; ++i)
-          {
-            for (unsigned int j = 0; j < num_comps; ++j)
-              {
-                phase.suscept[i][j] = helper_inv(i, j);
-              }
-          }
-      }
+  template <typename T>
+  T
+  get_sigma(unsigned int alpha_index, unsigned int beta_index, const T &temperature) const
+  {
+    return sigma(alpha_index, beta_index);
+  }
+
+  template <typename T>
+  T
+  get_mu_int(unsigned int alpha_index, unsigned int beta_index, const T &temperature) const
+  {
+    return mu_int(alpha_index, beta_index) *
+           std::exp(-mu_int_Q(alpha_index, beta_index) / (gas_constant * temperature));
   }
 
   /**
@@ -477,13 +585,13 @@ public:
       {
         fields.emplace_back("c_" + comp_name);
       }
-    for (const auto &phase_name : phase_names)
+    for (const auto &phase : phases)
       {
-        fields.emplace_back("h_" + phase_name);
+        fields.emplace_back("h_" + phase.name);
       }
-    for (const auto &phase_name : phase_names)
+    for (const auto &phase : phases)
       {
-        fields.emplace_back("omega_" + phase_name);
+        fields.emplace_back("omega_" + phase.name);
       }
     return fields;
   }
@@ -571,6 +679,31 @@ public:
   {
     using std::tanh;
     return 0.5 * (1.0 + tanh(2.0 * sdf / l_int));
+  }
+
+  IsothermalQuadraticSystem<num_comps>
+  get_isothermal_system(double temperature) const
+  {
+    IsothermalQuadraticSystem<num_comps> iso_sys(num_phases());
+    iso_sys.comp_names         = comp_names;
+    iso_sys.solution_component = solution_component;
+    iso_sys.order_params       = order_params;
+    for (unsigned int phase_index = 0; phase_index < num_phases(); ++phase_index)
+      {
+        iso_sys.phases[phase_index] = phases[phase_index].get_isothermal_phase(temperature);
+      }
+    iso_sys.sigma  = sigma;
+    iso_sys.mu_int = mu_int;
+    for (unsigned int i = 0; i < num_phases(); ++i)
+      {
+        for (unsigned int j = 0; j < num_phases(); ++j)
+          {
+            iso_sys.sigma  = sigma(i, j);
+            iso_sys.mu_int = mu_int(i, j);
+          }
+      }
+    iso_sys.update_derived_parameters();
+    return iso_sys;
   }
 
 private:

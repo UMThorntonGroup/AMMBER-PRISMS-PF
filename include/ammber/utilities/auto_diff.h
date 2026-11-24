@@ -1,6 +1,7 @@
 #pragma once
 
 #include <deal.II/base/tensor.h>
+#include <deal.II/base/symmetric_tensor.h>
 
 template <typename T>
 struct is_dealii_tensor

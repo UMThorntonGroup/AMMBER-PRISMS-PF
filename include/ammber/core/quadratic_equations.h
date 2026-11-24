@@ -1,6 +1,5 @@
 #pragma once
 
-#include <ammber/core/quadratic_system.h>
 #include <ammber/utilities/auto_diff.h>
 #include <ammber/utilities/mat_inversion.h>
 
@@ -17,16 +16,18 @@ using namespace prismspf;
  * @tparam dim The dimension of the problem
  * @tparam degree The degree of the finite element
  * @tparam num_comps The number of components
+ * @tparam system_type The system type, e.g., QuadraticSystem or TemperatureDependentQuadraticSystem
  */
-template <int dim, int degree, typename number, unsigned num_comps>
+template <int dim, int degree, typename number, typename system_type>
 class QuadraticEquations
 {
 public:
-  using ScalarValue     = dealii::VectorizedArray<number>;
-  using ScalarGrad      = dealii::Tensor<1, dim, ScalarValue>;
-  using ScalarField     = Dual<ScalarValue, dim>;
-  using ScalarVariation = Variation<ScalarValue, dim>;
-  using VarList         = FieldContainer<dim, degree, number>;
+  static constexpr unsigned int num_comps = system_type::num_comps;
+  using ScalarValue                       = dealii::VectorizedArray<number>;
+  using ScalarGrad                        = dealii::Tensor<1, dim, ScalarValue>;
+  using ScalarField                       = Dual<ScalarValue, dim>;
+  using ScalarVariation                   = Variation<ScalarValue, dim>;
+  using VarList                           = FieldContainer<dim, degree, number>;
   template <typename T>
   using CompVector = dealii::Tensor<1, num_comps, T>;
   template <typename T>
@@ -58,12 +59,13 @@ public:
   /**
    * @brief Pointer to the system parameters
    */
-  const QuadraticSystem<num_comps> *sys_ptr;
+  const system_type *sys_ptr;
 
   /**
    * @brief Values associated with each phase
    */
   std::vector<PhaseData> phase_data;
+
   /**
    * @brief Values associated with each component
    */
@@ -84,7 +86,7 @@ public:
   /**
    * Constructor
    */
-  explicit QuadraticEquations(const QuadraticSystem<num_comps> &_sys)
+  explicit QuadraticEquations(const system_type &_sys)
     : sys_ptr(&_sys)
     , phase_data(sys().phases.size())
     , op_data(sys().num_ops())
@@ -94,7 +96,7 @@ public:
   ~QuadraticEquations()
   {}
 
-  const QuadraticSystem<num_comps> &
+  const system_type &
   sys() const
   {
     return *sys_ptr;
@@ -175,14 +177,14 @@ public:
    * @brief Calculate the grand potential density for each phase
    */
   void
-  calculate_c_phase()
+  calculate_c_phase(const ScalarValue &temperature)
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
-        PhaseData                                        &phase      = phase_data[phase_index];
-        CompVector<ScalarField>                           delta_mu   = mu - phase_info.B;
-        phase.c_phase = phase_info.c_ref + phase_info.suscept * delta_mu;
+        const typename system_type::Phase &phase_info = sys().phases[phase_index];
+        PhaseData                         &phase      = phase_data[phase_index];
+        CompVector<ScalarField>            delta_mu   = mu - phase_info.get_B(temperature);
+        phase.c_phase = phase_info.get_c_ref(temperature) + phase_info.get_suscept(temperature) * delta_mu;
       }
   }
 
@@ -190,17 +192,17 @@ public:
    * @brief Calculate the grand potential density for each phase
    */
   void
-  calculate_omega_phase()
+  calculate_omega_phase(const ScalarValue &temperature)
   {
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
+        const typename system_type::Phase &phase_info = sys().phases[phase_index];
 
         PhaseData &phase                 = phase_data[phase_index];
-        phase.omega.val                  = phase_info.C;
-        CompVector<ScalarField> delta_mu = mu - phase_info.B;
-        CompVector<ScalarField> delta_c  = phase_info.suscept * delta_mu;
-        phase.omega += -0.5 * delta_mu * delta_c - mu * phase_info.c_ref;
+        phase.omega.val                  = phase_info.get_C(temperature);
+        CompVector<ScalarField> delta_mu = mu - phase_info.get_B(temperature);
+        CompVector<ScalarField> delta_c  = phase_info.get_suscept(temperature) * delta_mu;
+        phase.omega += -0.5 * delta_mu * delta_c - mu * phase_info.get_c_ref(temperature);
       }
   }
 
@@ -261,7 +263,7 @@ public:
    * @brief Calculate the time evolution of the order parameters
    */
   void
-  calculate_detadt()
+  calculate_detadt(const ScalarValue &temperature)
   {
     // Calculate the local interface mobility
     ScalarValue m(0.0);
@@ -277,13 +279,13 @@ public:
               {
                 continue; // Skip self-interaction
               }
-            double mu_ab =
-              0.5 * (sys().mu_int(alpha_index, beta_index) + sys().mu_int(beta_index, alpha_index));
-            double L_ab = 4.0 * mu_ab / sys().l_int / 3.0;
-            double sigma_ab =
-              0.5 * (sys().sigma(alpha_index, beta_index) + sys().sigma(beta_index, alpha_index));
-            double      m_ab        = 6.00 * sigma_ab / sys().l_int;
-            double      kappa_ab    = 0.75 * sigma_ab * sys().l_int;
+            ScalarValue mu_ab       = 0.5 * (sys().get_mu_int(alpha_index, beta_index, temperature) +
+                                       sys().get_mu_int(beta_index, alpha_index, temperature));
+            ScalarValue L_ab        = 4.0 * mu_ab / sys().l_int / 3.0;
+            ScalarValue sigma_ab    = 0.5 * (sys().get_sigma(alpha_index, beta_index, temperature) +
+                                          sys().get_sigma(beta_index, alpha_index, temperature));
+            ScalarValue m_ab        = 6.00 * sigma_ab / sys().l_int;
+            ScalarValue kappa_ab    = 0.75 * sigma_ab * sys().l_int;
             ScalarValue pair_sq_eta = op1.eta.val * op1.eta.val * op2.eta.val * op2.eta.val;
             L += L_ab * pair_sq_eta;
             m += m_ab * pair_sq_eta;
@@ -296,7 +298,7 @@ public:
     kappa /= sum_pair_sq_eta + 1.0e-12;
     for (auto &[alpha_index, op] : op_data)
       {
-        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases.at(alpha_index);
+        const typename system_type::Phase &phase_info = sys().phases.at(alpha_index);
 
         // Interface term
         ScalarVariation interface_term;
@@ -320,16 +322,16 @@ public:
    * @brief Calculate the local chemical mobility
    */
   void
-  calculate_local_mobility()
+  calculate_local_mobility(const ScalarValue &temperature)
   {
     M.clear();
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        PhaseData                                        &phase      = phase_data[phase_index];
-        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
-        const CompMatrix<double>                         &D          = phase_info.D;
-        const CompMatrix<double>                         &suscept    = phase_info.suscept;
-        M += phase.h.val * phase_info.D * phase_info.suscept;
+        PhaseData                         &phase      = phase_data[phase_index];
+        const typename system_type::Phase &phase_info = sys().phases[phase_index];
+        const CompMatrix<ScalarValue>      D          = phase_info.get_D(temperature);
+        const CompMatrix<ScalarValue>      suscept    = phase_info.get_suscept(temperature);
+        M += phase.h.val * D * suscept;
       }
   }
 
@@ -339,14 +341,14 @@ public:
    * potential through the susceptibility, local_suscept
    */
   void
-  calculate_dmudt()
+  calculate_dmudt(const ScalarValue &temperature)
   {
     CompSymmet<ScalarField> local_suscept;
     for (uint phase_index = 0; phase_index < phase_data.size(); phase_index++)
       {
-        PhaseData                                        &phase      = phase_data[phase_index];
-        const typename QuadraticSystem<num_comps>::Phase &phase_info = sys().phases[phase_index];
-        local_suscept += phase.h * dealii::symmetrize(phase_info.suscept);
+        PhaseData                         &phase      = phase_data[phase_index];
+        const typename system_type::Phase &phase_info = sys().phases[phase_index];
+        local_suscept += phase.h * dealii::symmetrize(phase_info.get_suscept(temperature));
       }
     // Flux term
     for (uint comp_i = 0; comp_i < num_comps; comp_i++)
@@ -380,14 +382,14 @@ public:
    * proper order
    */
   void
-  calculate_locals()
+  calculate_locals(const ScalarValue &temperature)
   {
-    calculate_c_phase();
-    calculate_omega_phase();
+    calculate_c_phase(temperature);
+    calculate_omega_phase(temperature);
     calculate_sum_sq_eta();
     calculate_h();
     calculate_dhdeta();
-    calculate_local_mobility();
+    calculate_local_mobility(temperature);
   }
 
   /**

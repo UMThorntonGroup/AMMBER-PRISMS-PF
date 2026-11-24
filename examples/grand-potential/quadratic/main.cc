@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: © 2025 PRISMS Center at the University of Michigan
 // SPDX-License-Identifier: GNU Lesser General Public Version 2.1
 
+#include <ammber/core/isothermal_quadratic_system.h>
+
 #include <prismspf/core/parse_cmd_options.h>
 #include <prismspf/core/problem.h>
 #include <prismspf/user_inputs/spatial_discretization.h>
@@ -43,9 +45,10 @@ main(int argc, char *argv[])
   constexpr unsigned int degree    = 1;
   constexpr unsigned int num_comps = 2;
   using number                     = float;
+  using system_type                = IsothermalQuadraticSystem<num_comps>;
 
-  QuadraticSystem<num_comps> sys;
-  std::ifstream              file("system.json");
+  system_type   sys;
+  std::ifstream file("system.json");
   if (!file.is_open())
     throw std::runtime_error("Could not open system");
   nlohmann::json model_parameters;
@@ -83,8 +86,8 @@ main(int argc, char *argv[])
   Logger::instance() << "Set order parameter refinement criteria\n";
 
   // Set up the PDE operator and run the problem
-  PhaseFieldTools<dim>                      pf_tools;
-  CustomPDE<dim, degree, number, num_comps> pde_operator(user_inputs, pf_tools, sys);
+  PhaseFieldTools<dim>                        pf_tools;
+  CustomPDE<dim, degree, number, system_type> pde_operator(user_inputs, pf_tools, sys);
   Problem<dim, degree, number> problem(field_attributes, solve_blocks, user_inputs, pf_tools, pde_operator);
   problem.solve();
 
