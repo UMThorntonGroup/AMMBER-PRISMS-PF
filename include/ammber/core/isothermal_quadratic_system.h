@@ -98,7 +98,6 @@ public:
 
   std::vector<std::string>   comp_names;
   std::vector<Phase>         phases;
-  std::vector<std::string>   phase_names;
   std::string                solution_component;
   std::vector<unsigned int>  order_params;
   dealii::FullMatrix<double> sigma;
@@ -172,7 +171,7 @@ public:
       }
 
     phases.clear();
-    phase_names.clear();
+    std::vector<std::string> phase_names;
     for (const std::string &phase_name : order)
       {
         if (!phases_json.contains(phase_name))
@@ -362,7 +361,7 @@ public:
     for (uint phase_index : order_params)
       {
         const std::string var_name =
-          phase_names.at(phase_index) + "_" + std::to_string(phase_counter[phase_index]++);
+          phases[phase_index].name + "_" + std::to_string(phase_counter[phase_index]++);
         op_names.push_back(var_name);
       }
     return op_names;
@@ -542,13 +541,13 @@ public:
       {
         fields.emplace_back("c_" + comp_name);
       }
-    for (const auto &phase_name : phase_names)
+    for (const auto &phase : phases)
       {
-        fields.emplace_back("h_" + phase_name);
+        fields.emplace_back("h_" + phase.name);
       }
-    for (const auto &phase_name : phase_names)
+    for (const auto &phase : phases)
       {
-        fields.emplace_back("omega_" + phase_name);
+        fields.emplace_back("omega_" + phase.name);
       }
     return fields;
   }
