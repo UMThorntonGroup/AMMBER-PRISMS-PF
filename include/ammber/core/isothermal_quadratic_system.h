@@ -37,7 +37,6 @@ public:
   template <typename T>
   using CompSymmet = dealii::SymmetricTensor<2, num_comps, T>;
 
-
   /**
    * @brief Parameters for each phase
    */
@@ -45,51 +44,53 @@ public:
   {
     std::string        name;
     CompMatrix<double> D, A, suscept;
-    CompVector<double> B, c_ref, c0, mu0;
+    CompVector<double> B, c_ref, c0;
     double             C = 0.0;
 
     template <typename T>
-    CompMatrix<T> get_D(const T & temperature) const
+    CompMatrix<T>
+    get_D(const T &temperature) const
     {
       return D;
     }
 
     template <typename T>
-    CompMatrix<T> get_A(const T & temperature) const
+    CompMatrix<T>
+    get_A(const T &temperature) const
     {
       return A;
     }
 
     template <typename T>
-    CompMatrix<T> get_suscept(const T & temperature) const
+    CompMatrix<T>
+    get_suscept(const T &temperature) const
     {
       return suscept;
     }
 
     template <typename T>
-    CompVector<T> get_B(const T & temperature) const
+    CompVector<T>
+    get_B(const T &temperature) const
     {
       return B;
     }
 
     template <typename T>
-    CompVector<T> get_c_ref(const T & temperature) const
+    CompVector<T>
+    get_c_ref(const T &temperature) const
     {
       return c_ref;
     }
 
-    const CompVector<double> & get_c0() const
+    const CompVector<double> &
+    get_c0() const
     {
       return c0;
     }
 
-    const CompVector<double> & get_mu0() const
-    {
-      return mu0;
-    }
-
     template <typename T>
-    T get_C(const T & temperature) const
+    T
+    get_C(const T &temperature) const
     {
       return C;
     }
@@ -387,8 +388,6 @@ public:
   {
     for (Phase &phase : phases)
       {
-        phase.mu0 = phase.A * (phase.c0 - phase.c_ref) + phase.B;
-
         dealii::FullMatrix<double> helper(num_comps);
         for (unsigned int i = 0; i < num_comps; ++i)
           {

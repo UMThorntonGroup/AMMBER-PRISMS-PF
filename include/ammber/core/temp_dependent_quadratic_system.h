@@ -46,13 +46,14 @@ public:
     std::string        name;
     CompMatrix<double> D, A, suscept;
     CompMatrix<double> Q, A1;
-    CompVector<double> B, c_ref, c0, mu0;
+    CompVector<double> B, c_ref, c0;
     CompVector<double> B1, c_ref_1;
-    double             C = 0.0;
+    double             C  = 0.0;
     double             C1 = 0.0;
 
     template <typename T>
-    CompMatrix<T> get_D(const T & temperature) const
+    CompMatrix<T>
+    get_D(const T &temperature) const
     {
       CompMatrix<T> full_D;
       for (unsigned int i = 0; i < num_comps; i++)
@@ -66,41 +67,42 @@ public:
     }
 
     template <typename T>
-    CompMatrix<T> get_A(const T & temperature) const
+    CompMatrix<T>
+    get_A(const T &temperature) const
     {
       return A + A1 * temperature;
     }
 
     template <typename T>
-    CompMatrix<T> get_suscept(const T & temperature) const
+    CompMatrix<T>
+    get_suscept(const T &temperature) const
     {
       return inverse_from_cholesky(dealii::symmetrize(get_A(temperature)));
     }
 
     template <typename T>
-    CompVector<T> get_B(const T & temperature) const
+    CompVector<T>
+    get_B(const T &temperature) const
     {
       return B + B1 * temperature;
     }
 
     template <typename T>
-    CompVector<T> get_c_ref(const T & temperature) const
+    CompVector<T>
+    get_c_ref(const T &temperature) const
     {
       return c_ref + c_ref_1 * temperature;
     }
 
-    const CompVector<double> & get_c0() const
+    const CompVector<double> &
+    get_c0() const
     {
       return c0;
     }
 
-    const CompVector<double> & get_mu0() const
-    {
-      return mu0;
-    }
-
     template <typename T>
-    T get_C(const T & temperature) const
+    T
+    get_C(const T &temperature) const
     {
       return C + C1 * temperature;
     }
@@ -116,7 +118,6 @@ public:
   dealii::FullMatrix<double> mu_int_Q;
   double                     Vm    = 0.0;
   double                     l_int = 0.0;
-  double                     initial_temperature = 0.0;
 
   static constexpr double gas_constant = 8.31446261815324; // J / (mol K)
 
@@ -197,15 +198,15 @@ public:
         const nlohmann::json &phase_json = phases_json.at(phase_name);
 
         Phase phase;
-        phase.name  = phase_name;
-        phase.C     = phase_json.at("C").get<double>();
-        phase.C1    = phase_json.at("C1").get<double>();
-        phase.D     = parse_component_matrix(phase_json.at("D"));
-        phase.Q     = parse_component_matrix(phase_json.at("Q"));
-        phase.A     = parse_component_matrix(phase_json.at("A"));
-        phase.A1    = parse_component_matrix(phase_json.at("A1"));
-        phase.B     = parse_vector(phase_json.at("B"));
-        phase.B1    = parse_vector(phase_json.at("B1"));
+        phase.name = phase_name;
+        phase.C    = phase_json.at("C").get<double>();
+        phase.C1   = phase_json.at("C1").get<double>();
+        phase.D    = parse_component_matrix(phase_json.at("D"));
+        phase.Q    = parse_component_matrix(phase_json.at("Q"));
+        phase.A    = parse_component_matrix(phase_json.at("A"));
+        phase.A1   = parse_component_matrix(phase_json.at("A1"));
+        phase.B    = parse_vector(phase_json.at("B"));
+        phase.B1   = parse_vector(phase_json.at("B1"));
 
         phase.c_ref   = parse_vector(phase_json.at("c_ref"));
         phase.c_ref_1 = parse_vector(phase_json.at("c_ref_1"));
@@ -218,8 +219,6 @@ public:
     sigma    = parse_phase_matrix(j.at("sigma"), phases.size());
     mu_int   = parse_phase_matrix(j.at("mu_int"), phases.size());
     mu_int_Q = parse_phase_matrix(j.at("mu_int_Q"), phases.size());
-    
-    initial_temperature = j.at("T0").get<double>();
 
     order_params.clear();
     for (const auto &phase_name_json : j.at("order_parameters"))
@@ -346,8 +345,7 @@ public:
           {
             for (unsigned int j = 0; j < num_comps; ++j)
               {
-                std::cout << std::setw(col_width) << phase.A[i][j]
-                  << "+" << phase.A1[i,j] << "*T";
+                std::cout << std::setw(col_width) << phase.A[i][j] << "+" << phase.A1[i, j] << "*T";
               }
             std::cout << "\n";
           }
@@ -355,22 +353,19 @@ public:
         std::cout << "B:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
-            std::cout << std::setw(col_width) << phase.B[i]
-              << " + " << phase.B1[i] << "*T";
+            std::cout << std::setw(col_width) << phase.B[i] << " + " << phase.B1[i] << "*T";
           }
         std::cout << "\nc_ref:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
-            std::cout << std::setw(col_width) << phase.c_ref[i]
-              << " + " << phase.c_ref_1[i] << "*T";
+            std::cout << std::setw(col_width) << phase.c_ref[i] << " + " << phase.c_ref_1[i] << "*T";
           }
         std::cout << "\nc0:";
         for (unsigned int i = 0; i < num_comps; ++i)
           {
             std::cout << std::setw(col_width) << phase.c0[i];
           }
-        std::cout << "\nC:" << std::setw(col_width) << phase.C
-          << " + " << phase.C1 << "*T\n\n";
+        std::cout << "\nC:" << std::setw(col_width) << phase.C << " + " << phase.C1 << "*T\n\n";
       }
 
     std::cout << "sigma:\n";
@@ -440,14 +435,7 @@ public:
 
   void
   update_derived_parameters()
-  {
-    for (Phase &phase : phases)
-      {
-        phase.mu0 = phase.get_A(initial_temperature)
-          * (phase.c0 - phase.get_c_ref(initial_temperature))
-          + phase.get_B(initial_temperature);
-      }
-  }
+  {}
 
   template <typename T>
   T
@@ -460,8 +448,8 @@ public:
   T
   get_mu_int(unsigned int alpha_index, unsigned int beta_index, const T &temperature) const
   {
-    return mu_int(alpha_index, beta_index)
-      * std::exp(-mu_int_Q(alpha_index, beta_index) / (gas_constant * temperature));
+    return mu_int(alpha_index, beta_index) *
+           std::exp(-mu_int_Q(alpha_index, beta_index) / (gas_constant * temperature));
   }
 
   /**
